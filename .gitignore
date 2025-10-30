@@ -1,0 +1,26 @@
+# Python / env
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VSCode
+.vscode/
+
+# Database (nếu DB.sql chứa dữ liệu nhạy cảm, cân nhắc)
+# Nếu chỉ cấu trúc DB thì OK. Nếu chứa credentials -> không push
+# DB.sql
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# virtualenv
+env/
