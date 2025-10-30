@@ -63,7 +63,7 @@ def dashboard():
         best_source = max(summary_data, key=lambda x: x["deal_score"])
 
         target_price = float(best_source["avg_price"])
-        min_range = target_price * 0.7
+        min_range = target_price * 0.8
         max_range = target_price * 1.2
 
 
@@ -90,7 +90,7 @@ def dashboard():
         WHERE Source = %s
         AND ProductName LIKE %s
         AND CAST(Price AS UNSIGNED) BETWEEN %s AND %s
-        ORDER BY CAST(Quantity_Sold AS UNSIGNED) DESC, CAST(Rating AS UNSIGNED) DESC, CAST(Price AS UNSIGNED) ASC
+        ORDER BY CAST(Quantity_Sold AS UNSIGNED) DESC, CAST(Price AS UNSIGNED) ASC, CAST(Rating AS UNSIGNED) DESC
         LIMIT 1;
     """, (best_deal["source"], '%' + keyword.replace(" ", "%") + '%', min_range, max_range))
 
