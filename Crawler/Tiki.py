@@ -10,7 +10,7 @@ from utils import Save_to_database, Convert_text
 def Get_data(keyword):
     encoded = urllib.parse.quote(keyword)
     data_sp = []
-    for i in range(1, 2):
+    for i in range(1, 11):
         url = f'https://tiki.vn/api/v2/products?limit=82&include=advertisement&aggregations=2&trackity_id=06861abb-5fa7-dbfb-e863-8ce9c5b0178b&q={encoded}&page={i}'
         response = requests.get(url, headers=TIKI_HEADERS)
         data_json = response.json()
