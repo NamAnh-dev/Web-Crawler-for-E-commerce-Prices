@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EcomCheck – Kết quả</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ===== RESET & LAYOUT ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #ffffff);
+      color: #333;
+      min-height: 100vh;
+      padding: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .app { width: 100%; max-width: 1100px; }
+
+    /* ===== HEADER ===== */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #81ecec, #74b9ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 22px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .brand { display: flex; flex-direction: column; }
+    .brand .title { font-weight: 700; font-size: 18px; color: #2c3e50; }
+    .brand .tag { font-size: 13px; color: #555; }
+
+    /* ===== CARD ===== */
+    .card {
+      background: #fefefe;
+      border-radius: 20px;
+      padding: 30px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 16px;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 i { color: #74b9ff; }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      background: #f5f5f5;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+      border: 1px solid #e0e0e0;
+      border-radius: 16px;
+    }
+    .filter-left, .filter-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Input, Select, Button Base */
+    .ctrl, .sort-toggle, .btn-primary {
+      height: 46px;
+      border-radius: 12px;
+      font-size: 14px;
+      padding: 0 14px;
+      appearance: none;
+      line-height: 1.4;
+      color: #333;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .ctrl:focus, .sort-toggle:hover, .btn-primary:hover {
+      border-color: #00b894;
+      box-shadow: 0 6px 16px rgba(0,184,148,0.15);
+      outline: none;
+    }
+    .ctrl::placeholder { color: #888; }
+
+    /* Input widths */
+    .w-price, .w-large, .w-sold, .w-source {
+      width: 140px;
+    }
+
+
+    /* Sort */
+    .sort-toggle {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+    .sort-toggle i { color: #74b9ff; }
+    .sort-options {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      display: none;
+      min-width: 180px;
+      overflow: hidden;
+      z-index: 50;
+    }
+    .sort-options a {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: #333;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+    .sort-options a:hover {
+      background: #d0f0f0;
+      color: #00b894;
+    }
+
+    /* Primary button */
+    .btn-primary {
+      background: linear-gradient(135deg, #74b9ff, #0984e3);
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:active { transform: translateY(1px); }
+
+    /* ===== TABLE ===== */
+    .table-wrap {
+      overflow-x: auto;
+      max-width: 100%;
+      min-width: unset;
+      table-layout: fixed;
+      margin-top: 18px;
+      overflow-x: auto;
+      border-radius: 12px;
+      /* max-height: 600px; */
+      /* overflow-y: auto; */
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+    .table-wrap::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    
+    table {
+      width: 100%;
+      min-width: 860px;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 18px 14px;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    thead th {
+      background: linear-gradient(135deg, #74b9ff, #9bc7f4);
+      color: #fff;
+      font-weight: 700;
+      white-space: nowrap; /* giữ nội dung trên 1 dòng */
+    }
+    tbody tr:nth-child(even) td { background: #f9f9f9; }
+    tbody tr:hover td { background: #e0f7fa; }
+
+    img.thumb {
+      width: 72px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+
+    .price { 
+      color: #2e90ff; 
+      font-weight: 700; 
+      white-space: nowrap; /* giữ nội dung trên 1 dòng */
+      font-weight: 700;
+    }
+    .original {
+      color: #93a0ad;
+      text-decoration: line-through;
+      font-size: 13px;
+      white-space: nowrap; /* giữ nội dung trên 1 dòng */
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 10px;
+      background: #ef4444;
+      color: #fff;
+    }
+    .link-btn {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #5daeff, #95d1ff);
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .link-btn:hover { background: #0984e3; }
+
+    .no-data {
+      text-align: center;
+      padding: 36px;
+      color: #888;
+    }
+
+    .back {
+      display: block;
+      margin: 20px auto 0;
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #3f9fff);
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;       
+      outline: none;     
+      box-shadow: none;     
+    }
+    .back:hover { background: #0984e3; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 880px) {
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-left, .filter-right { justify-content: center; }
+      table { min-width: 760px; }
+    }
+    @media (max-width: 520px) {
+      .card { padding: 20px; }
+      .filter-bar { gap: 10px; padding: 12px 14px; }
+      h1 { font-size: 18px; }
+    }
+
+        /* ===== OVERVIEW CARD ===== */
+    .overview-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg , #b8dcff, #ceffff);
+      padding: 18px 24px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid #d0e0e0;
+    }
+    .overview-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+    .overview-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .overview-content i {
+      font-size: 28px;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* tạo chiều sâu */
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); /* làm nổi khối */
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
+
+    .overview-card:hover .overview-content i {
+      transform: scale(1.1); /* phóng to nhẹ */
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)); /* đổ bóng mạnh hơn */
+    }
+
+
+    .overview-content .text h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #000000;
+    }
+    .overview-content .text p {
+      font-size: 14px;
+      color: #000000;
+    }
+    .overview-card i.fa-chevron-right {
+      font-size: 18px;
+      color: #0984e3;
+    }
+    .ctrl.w-source {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M70 90 L40 60 H100 Z' fill='%23666'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px;
+    }
+    tbody tr {
+      transition: transform 0.2s ease;
+    }
+    tbody tr:hover td {
+      background: #e0f7fa;
+    }
+
+    td .rating {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      white-space: nowrap;
+      font-size: 14px;
+      color: #facc15;
+    }
+
+    .pagination-block {
+      margin-top: 32px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .pagination-list {
+      list-style: none;
+      display: inline-flex;
+      gap: 8px;
+      padding: 0;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .pagination-list li {
+      display: inline-block;
+    }
+
+    .page-btn {
+      display: inline-block;
+      min-width: 32px;
+      height: 32px;
+      line-height: 32px;
+      text-align: center;
+      font-weight: 500;
+      font-size: 13px;
+      color: #333;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      padding: 0 8px;
+    }
+
+
+    .page-btn:hover {
+      background-color: #f1f1f1;
+      border-color: #74b9ff;
+      color: #0984e3;
+    }
+
+    .page-btn.active {
+      background: linear-gradient(135deg, #74b9ff, #0984e3);
+      color: #fff;
+      border-color: #0984e3;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      pointer-events: none;
+    }
+
+    .page-ellipsis {
+      display: inline-block;
+      padding: 0 6px;
+      font-size: 14px;
+      color: #999;
+    }
+
+    .pagination-block {
+      margin-bottom: 32px; /* tăng từ 24px lên 32px */
+    }
+
+    tbody tr:hover td {
+      background: #e0f7fa;
+    }
+    tbody tr {
+      transition: background 0.3s ease;
+    }
+
+
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo"><i class="fas fa-search-dollar"></i></div>
+      <div class="brand">
+        <div class="title">EcomCheck</div>
+        <div class="tag">So sánh giá thông minh</div>
+      </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+      <h1><i class="fas fa-tags"></i> Sản phẩm: {{ keyword }}</h1>
+      <input type="hidden" id="hiddenKeyword" value="{{ keyword }}">
+      
+      <!-- Overview Card -->
+      {% if products %}
+        <div class="overview-card" onclick="goToDashboard()">
+          <div class="overview-content">
+            <i class="fas fa-chart-pie"></i>
+            <div class="text">
+              <h3>Tổng quan phân tích giá & thị phần</h3>
+              <p>Xem biểu đồ trực quan so sánh giữa các sàn TMĐT</p>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      {% endif %}
+      <!-- Filter Form -->
+      <form method="get" action="/" class="filter-bar" id="filterForm">
+        <!-- <select name="per_page" class="ctrl w-source">
+          <option value="10" {% if per_page == 10 %}selected{% endif %}>10 sản phẩm/trang</option>
+          <option value="20" {% if per_page == 20 %}selected{% endif %}>20 sản phẩm/trang</option>
+          <option value="50" {% if per_page == 50 %}selected{% endif %}>50 sản phẩm/trang</option>
+        </select> -->
+
+
+        <div class="filter-left">
+          <input type="hidden" name="keyword" value="{{ keyword }}">
+          <input class="ctrl w-price" type="number" name="min_price" placeholder="Giá từ" value="{{ request.args.get('min_price','') }}">
+          <input class="ctrl w-large" type="number" name="max_price" placeholder="Giá đến" value="{{ request.args.get('max_price','') }}">
+          <input class="ctrl w-sold" type="number" name="min_sold" placeholder="Đã bán từ" value="{{ request.args.get('min_sold','') }}">
+          <select id="source" class="ctrl w-source" name="source">
+            {% set selected_source = request.args.get('source', 'all') %}
+            <option value="all" {% if selected_source == 'all' %}selected{% endif %}>Sàn thương mại</option>
+            <option value="Shopee" {% if selected_source == 'Shopee' %}selected{% endif %}>Shopee</option>
+            <option value="Lazada" {% if selected_source == 'Lazada' %}selected{% endif %}>Lazada</option>
+            <option value="Tiki" {% if selected_source == 'Tiki' %}selected{% endif %}>Tiki</option>
+          </select>
+        </div>
+
+        <div class="filter-right">
+          <div style="position: relative;">
+            <div class="sort-toggle" id="sortToggle">
+              <span>
+                {% if request.args.get('sort') == 'asc' %}
+                  <i class="fas fa-arrow-up-wide-short"></i> Giá tăng
+                {% elif request.args.get('sort') == 'desc' %}
+                  <i class="fas fa-arrow-down-wide-short"></i> Giá giảm
+                {% else %}
+                  <i class="fas fa-sort"></i> Giá
+                {% endif %}
+              </span>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+              <div class="sort-options" id="sortMenu">
+                <a href="#" onclick="applySort('asc')" class="{% if request.args.get('sort')=='asc' %}active{% endif %}">
+                  Giá tăng dần <i class="fas fa-arrow-up"></i>
+                </a>
+                <a href="#" onclick="applySort('desc')" class="{% if request.args.get('sort')=='desc' %}active{% endif %}">
+                  Giá giảm dần <i class="fas fa-arrow-down"></i>
+                </a>
+            </div>
+          </div>
+          <button class="btn-primary" type="submit">
+            <i class="fas fa-filter"></i>&nbsp;Lọc
+          </button>
+        </div>
+      </form>
+
+      <!-- Results Table -->
+      {% if products %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá</th>
+                <th>Giá gốc</th><th>Giảm</th><th>Đã bán</th>
+                <th>Đánh giá</th><th>Sàn</th><th>Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in products %}
+              <tr>
+                <td><img class="thumb" src="{{ p.URL_Image }}" alt=""></td>
+                <td>{{ p.ProductName }}</td>
+                <td class="price">{{ "{:,.0f}".format(p.Price|float) }} ₫</td>
+                <td class="original">{{ "{:,.0f}".format(p.Original_Price|float) }} ₫</td>
+                <td><span class="badge">{{ p.Discount }}%</span></td>
+                <td>{{ p.Quantity_Sold }}</td>
+                  <td>
+                    <div class="rating">
+                      {% for i in range(p.Rating|int) %}
+                        <i class="fas fa-star"></i>
+                      {% endfor %}
+                      {% if p.Rating|float - p.Rating|int >= 0.5 %}
+                        <i class="fas fa-star-half-alt"></i>
+                      {% endif %}
+                    </div>
+                  </td>
+                <td>{{ p.Source }}</td>
+                <td><a class="link-btn" href="{{ p.URL_Product }}" target="_blank">Xem</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="no-data"><i class="fas fa-search"></i> Chưa có dữ liệu. Hãy tìm sản phẩm để hiển thị.</div>
+      {% endif %}
+    
+        <div class="pagination-block">
+          <ul class="pagination-list">
+            {% set total_pages = (total_products // per_page) + (1 if total_products % per_page else 0) %}
+            {% set max_display = 5 %}
+            {% set start_page = page - 2 if page - 2 > 1 else 1 %}
+            {% set end_page = start_page + max_display - 1 if start_page + max_display - 1 < total_pages else total_pages %}
+            {% if end_page - start_page < max_display %}
+              {% set start_page = end_page - max_display + 1 if end_page - max_display + 1 > 1 else 1 %}
+            {% endif %}
+
+            {# Trang đầu #}
+            {% if start_page > 1 %}
+              <li><a class="page-btn" href="?page=1&per_page={{ per_page }}&keyword={{ keyword }}{% for k,v in request.args.items() if k != 'page' and k != 'per_page' %}&{{ k }}={{ v }}{% endfor %}">1</a></li>
+              {% if start_page > 2 %}
+                <li><span class="page-ellipsis">...</span></li>
+              {% endif %}
+            {% endif %}
+
+            {# Các trang giữa #}
+            {% for p in range(start_page, end_page + 1) %}
+              <li>
+                <a class="page-btn {% if p == page %}active{% endif %}" href="?page={{ p }}&per_page={{ per_page }}&keyword={{ keyword }}{% for k,v in request.args.items() if k != 'page' and k != 'per_page' %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
+              </li>
+            {% endfor %}
+
+            {# Trang cuối #}
+            {% if end_page < total_pages %}
+              {% if end_page < total_pages - 1 %}
+                <li><span class="page-ellipsis">...</span></li>
+              {% endif %}
+              <li><a class="page-btn" href="?page={{ total_pages }}&per_page={{ per_page }}&keyword={{ keyword }}{% for k,v in request.args.items() if k != 'page' and k != 'per_page' %}&{{ k }}={{ v }}{% endfor %}">{{ total_pages }}</a></li>
+            {% endif %}
+          </ul>
+        </div>
+
+
+      <form action="/" method="get">
+        <button class="back" type="submit"><i class="fas fa-arrow-left"></i> Quay về tìm kiếm</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS: Sort Dropdown -->
+  <script>
+    (function() {
+      const toggle = document.getElementById('sortToggle');
+      const menu = document.getElementById('sortMenu');
+
+      toggle?.addEventListener('click', () => {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+      });
+
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#sortToggle') && !e.target.closest('#sortMenu')) {
+          menu.style.display = 'none';
+        }
+      });
+    })();
+  </script>
+  <script>
+  function goToDashboard() {
+    const hiddenKeyword = document.getElementById('hiddenKeyword')?.value || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const keyword = hiddenKeyword || urlParams.get('keyword') || '';
+
+    if (keyword) {
+      window.location.href = `/dashboard?keyword=${encodeURIComponent(keyword)}`;
+    } else {
+      alert("Vui lòng nhập từ khóa để xem biểu đồ!");
+    }
+  }
+  </script>
+  <script>
+    function applySort(order) {
+      const form = document.getElementById('filterForm');
+      const urlParams = new URLSearchParams(new FormData(form));
+      urlParams.set('sort', order);
+      window.location.href = '/?' + urlParams.toString();
+    }
+  </script>
+</body>
+</html>

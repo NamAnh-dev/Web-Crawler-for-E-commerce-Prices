@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcomCheck – Dashboard so sánh giá</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p6Oa2X..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #f4f7fb;
+    --card: #fefefe;
+    --muted: #6b7280;
+    --text: #0f1724;
+    --primary: #0066ff; /* main brand */
+    --primary-600: #0051d4;
+    --accent: #ff7a59;
+    --success: #00b894;
+    --glass: rgba(255,255,255,0.65);
+    --radius-lg: 14px;
+    --radius-md: 10px;
+    --shadow-1: 0 8px 28px rgba(15,23,42,0.06);
+    --shadow-2: 0 6px 20px rgba(15,23,42,0.04);
+    --max-width: 1200px;
+  }
+
+  h2, h3, h4 {
+    letter-spacing: -0.3px;
+  }
+
+  .card .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .card .meta {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    line-height: 1.6;
+  }
+
+  /* Reset + base */
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    background: linear-gradient(90deg, #ffffff);
+    margin:0; color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+
+  /* Layout */
+  .wrap{max-width:var(--max-width); margin:28px auto; padding:20px}
+  header.topbar{
+    display:flex; align-items:center; gap:18px; justify-content:space-between;
+    background: linear-gradient(90deg, var(--card), var(--card-600));
+    color:#fff; padding:18px 22px; border-radius:12px; box-shadow:0 10px 30px rgba(3,102,214,0.12);
+  }
+  .brand{display:flex; gap:12px; align-items:center}
+  .brand .logo{width:44px; height:44px; border-radius:10px; background: rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-weight:800}
+  .brand h1{font-size:18px; margin:0; font-weight:800}
+  .search-area{display:flex; gap:10px; align-items:center}
+  .search-area form{display:flex; gap:8px}
+  .search-area input[type=text]{padding:10px 12px; border-radius:8px; border:none; min-width:220px}
+  .search-area button{padding:10px 14px; border-radius:8px; border:none; background:#fff; color:var(--primary); font-weight:700}
+
+  /* Main card */
+  .panel{background:var(--card); margin-top:18px; border-radius:var(--radius-lg); padding:22px; box-shadow:var(--shadow-1); border:1px solid rgba(15,23,42,0.03)}
+
+  .header-row{display:flex; gap:18px; align-items:center; justify-content:space-between; margin-bottom:18px}
+  .title-block{display:flex; gap:12px; align-items:center}
+  .title-block h2{margin:0; font-size:20px}
+  .subtitle{color:var(--muted); font-weight:600}
+
+  /* Summary cards */
+  .summary{display:grid; grid-template-columns: repeat(4,1fr); gap:14px; margin-bottom:20px}
+  .card{background:linear-gradient(180deg,#fff,#fcfdff); padding:16px; border-radius:12px; box-shadow:var(--shadow-2); border:1px solid rgba(15,23,42,0.03); display:flex; gap:12px; align-items:center}
+  .card .meta{font-size:12px; color:var(--muted); font-weight:700}
+  .card .value{font-size:18px; font-weight:800}
+  .card .icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(0,102,255,0.08), rgba(0,81,212,0.06)); color:var(--primary)}
+
+  /* Best deal highlighted */
+  .best-deal{display:flex; align-items:center; gap:18px; padding:16px; border-radius:12px; background: linear-gradient(90deg, rgba(255,250,240,1), rgba(255,245,235,1)); border-left:4px solid var(--accent)}
+  .best-deal .bd-left{flex:1}
+  .best-deal .bd-price{font-size:20px; font-weight:900}
+
+  /* Grid charts */
+  .grid{display:grid; grid-template-columns: 1fr 548px; gap:18px; margin-top:18px}
+  .charts{display:grid; grid-template-rows: 1fr 280px; gap:12px}
+  .chart-card{background:linear-gradient(180deg,#fff,#fcfdff); padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,0.03); box-shadow:var(--shadow-2)}
+  .chart-title{font-size:13px; color:var(--muted); font-weight:700; margin-bottom:8px}
+  .chart-canvas{min-height:200px; display:flex; align-items:center; justify-content:center}
+
+  /* Right column (top sold + legend) */
+  .right-col{display:flex; flex-direction:column; gap:12px}
+
+    .top-list {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fff, #fcfdff);
+    border: 1px solid rgba(15,23,42,0.05);
+    box-shadow: var(--shadow-2);
+    animation: fadeIn 0.6s ease forwards;
+  }
+
+  .top-list h4 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .top-item {
+    display: flex;
+    align-items: flex-start; /* căn đều theo đỉnh, tránh lệch */
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(15,23,42,0.06);
+    transition: background 0.2s ease;
+  }
+
+  .top-item:last-child {
+    border-bottom: none;
+  }
+
+  .top-item:hover {
+    background: rgba(0,102,255,0.03);
+    border-radius: 8px;
+  }
+
+  .top-item img {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+
+  .top-item strong a {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .top-item strong a:hover {
+    color: var(--primary);
+  }
+
+  .top-item .muted {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .top-item .right {
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .top-item .right div {
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.8;
+  }
+
+
+  table{width:100%; border-collapse:collapse; margin-top:14px}
+  thead th{background:linear-gradient(90deg,#81b6eb,#c6daff); padding:12px; text-align:left; font-size:13px; color:var(--card); position:sticky; top:0}
+  tbody td{padding:12px; border-bottom:1px solid rgba(15,23,42,0.03); font-size:14px; font-weight:600}
+
+  tbody tr:hover {
+    background: #eaf4ff;
+  }
+  table {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .back{display:inline-block; margin-top:18px; padding:10px 14px; background: #4e9cea; color:#fff; border-radius:10px; text-decoration:none; font-weight:700}
+
+  /* Responsive */
+  @media (max-width: 980px){
+    .grid{grid-template-columns: 1fr}
+    .summary{grid-template-columns: repeat(2,1fr)}
+  }
+  @media (max-width: 520px){
+    .summary{grid-template-columns: 1fr}
+    .search-area input[type=text]{min-width:120px}
+  }
+
+
+
+  /* Fix kích thước biểu đồ tròn */
+  #soldChart {
+    width: 100% !important;
+    height: 260px !important;
+    max-height: 280px;
+    display: block;
+    margin: 0 auto;
+  }
+  .chart-row {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+  }
+  .chart-card {
+    flex: 1;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .chart-canvas {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #soldChart {
+    width: 100% !important;
+    height: 240px !important;
+    max-height: 260px;
+    margin: auto;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #81ecec, #74b9ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  .brand { display: flex; flex-direction: column; }
+  .brand .title { font-weight: 700; font-size: 20px; color: #2c3e50; }
+  .brand .tag { font-size: 13px; color: #555; }
+
+  .icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dbeafe, #ffffff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    color: var(--primary);
+    font-size: 22px;
+  }
+  .icon-box:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+  }
+
+  .card .icon {
+    margin-right: 10px;
+    flex-shrink: 0;
+    min-width: 44px;
+  }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .summary .card:nth-child(1) .icon {
+    color: #0066ff; background: rgba(0,102,255,0.1);
+  }
+  .summary .card:nth-child(2) .icon {
+    color: #00b894; background: rgba(0,184,148,0.1);
+  }
+  .summary .card:nth-child(3) .icon {
+    color: #ffa502; background: rgba(255,165,2,0.1);
+  }
+  .summary .card:nth-child(4) .icon {
+    color: #6c5ce7; background: rgba(108,92,231,0.1);
+  }
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(0,102,255,0.08);
+    color: var(--primary);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .card {
+    animation: fadeInUp 0.6s ease forwards;
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 102, 255, 0.1);
+  }
+
+  .top-item img:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+  }
+  .best-deal {
+    transition: all 0.3s ease;
+  }
+
+  .best-deal:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(255, 122, 89, 0.2); /* bóng đổ cam nhẹ */
+    border-left: 4px solid var(--primary); /* đổi màu viền khi hover */
+    background: linear-gradient(90deg, rgba(255,255,255,1), rgba(245,245,245,1)); /* nền sáng hơn */
+  }
+
+  .hover-block {
+    background: linear-gradient(180deg, #fff, #fcfdff);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-2);
+    border: 1px solid rgba(15,23,42,0.03);
+    transition: all 0.3s ease;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+
+  .hover-block:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 102, 255, 0.1);
+    background: linear-gradient(90deg, rgba(255,255,255,1), rgba(245,245,245,1));
+    border-left: 4px solid var(--primary);
+  }
+
+  .hover-block .icon-box:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+  }
+  .header-row {
+    display: flex;
+    gap: 18px;
+    align-items: stretch; /* giúp các khối con cao bằng nhau */
+  }
+
+  .hover-block,
+  .best-deal {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .header-row {
+    display: flex;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .block-equal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .best-deal {
+    min-height: 120px; /* hoặc giá trị phù hợp */
+  }
+
+  .title-block {
+    min-width: 270px;
+    min-height: 100px;
+  }
+
+  .best-deal {
+    min-width: 825px;
+    min-height: 150px;
+  }
+
+  /* .highlight-box {
+    background: linear-gradient(180deg, #ffffff, #f9fbff);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,102,255,0.08);
+    border-left: 4px solid var(--primary);
+    margin-bottom: 12px;
+    animation: fadeIn 0.6s ease forwards;
+  } */
+
+  .highlight-box h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    background: linear-gradient(90deg, rgba(0,102,255,0.05), rgba(0,184,148,0.05));
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chart-card.notes {
+    background: linear-gradient(180deg, #f9fbff, #ffffff);
+    border-left: 4px solid var(--primary);
+    box-shadow: 0 4px 12px rgba(0,102,255,0.05);
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+
+  .best-deal {
+    background: linear-gradient(135deg, #fffaf0, #fff5e5);
+    border-left: 4px solid var(--accent);
+    box-shadow: 0 6px 16px rgba(255, 122, 89, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .best-deal:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(255, 122, 89, 0.2);
+    background: linear-gradient(90deg, #ffffff, #fef3e7);
+  }
+
+  .top-item strong a {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .top-item .muted {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .top-item .right {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .badge-hot {
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-left: 6px;
+  }
+
+  .note-list {
+    padding-left: 18px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .note-list li {
+    margin-bottom: 6px;
+  }
+  
+  .back:hover {
+    background: #0066ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,102,255,0.2);
+  }
+
+  .quick-actions {
+    background: linear-gradient(180deg, #f9fdff);
+    padding: 2px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,102,255,0.05);
+    /* border-left: 4px solid var(--primary); */
+    text-align: center;
+  }
+
+  .quick-actions h4 {
+    margin-bottom: 12px;
+    font-size: 16px;
+    color: var(--success);
+  }
+
+  .panel .content {
+    display: flex;
+    align-items: flex-start; /* căn trên cùng hàng */
+    gap: 24px;
+  }
+
+  /* Cột sản phẩm (trái) */
+  .product-section {
+    flex: 2; /* chiếm nhiều không gian hơn */
+    background: var(--card);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  /* Cột best deal (phải) */
+  .bestdeal-section {
+    flex: 1; /* nhỏ hơn */
+    background: var(--card);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    height: 100%; /* đảm bảo cùng chiều cao với product-section */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Best deal item */
+  .bestdeal-section .top-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .bestdeal-section .top-item img {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+
+  .chart-card.notes {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    padding: 16px;
+  }
+
+</style>
+</head>
+  <body>
+    <div class="wrap">
+      <header class="topbar">
+        <div class="header">
+          <div class="logo"><i class="fas fa-search-dollar"></i></div>
+          <div class="brand">
+            <div class="title">EcomCheck</div>
+            <div class="tag">Dashboard phân tích tổng quan</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="panel">
+        <div class="header-row">
+          <div class="title-block hover-block block-equal">
+            <div class="icon-box">
+              <i class="fas fa-box-open "></i>  <!-- hoặc fa-tags / fa-search -->
+            </div>
+            <div class="highlight-box">
+              <h2><i class="fas fa-tag" style="margin-right:8px; color:#0066ff;"></i> {{ keyword }}</h2>
+              <div class="subtitle">Tổng quan nhanh về giá và lượng bán theo từng sàn</div>
+            </div>
+
+          </div>
+          <div style="display:flex; gap:12px; align-items:center">
+            {% if similarProducts %}
+            <div class="top-list best-deal block-equal" style="margin-top:12px">
+              <h4>🏷️ BEST DEAL <span class="badge-hot">HOT</span></h4>
+              {% for p in similarProducts %}
+                <div class="top-item">
+                  <img src="{{ p.URL_Image }}" alt="Ảnh sản phẩm" style="width:48px; height:48px; border-radius:8px; object-fit:cover; margin-right:8px">
+                  <div style="max-width:65%">
+                    <strong><a href="{{ p.URL_Product }}" target="_blank" style="color:inherit; text-decoration:none">{{ p.ProductName }}</a></strong>
+                    <div class="muted">{{ "{:,.0f}".format(p.Price|int) }} ₫ • <span style="color:#0066ff">{{ p.Source }}</span></div>
+                  </div>
+                  <div class="right">
+                    {{ p.Quantity_Sold }} đã bán
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="card">
+            <div class="icon"><i class="fa-solid fa-store"></i></div>
+            <div>
+              <div class="meta">Số sàn thương mại</div>
+              <div class="value">
+                {% if summary|length > 0 %}
+                  {{ summary|length }}
+                {% else %}
+                  <span style="color:var(--muted); font-size:13px">Không có dữ liệu</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="icon"><i class="fa-solid fa-coins"></i></div>
+            <div>
+              <div class="meta">Giá trung bình toàn thị trường</div>
+              <div class="value">
+                {% set avg_price = (summary|map(attribute='avg_price')|sum / (summary|length if summary|length>0 else 1)) %}
+                {{ "{:,.0f}".format(avg_price) }} ₫
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div>
+              <div class="meta">Lượng bán TB theo từng sàn <br></div>
+              <div class="value" style="font-size:13px; line-height:1.6">
+                {% for s in summary %}
+                  <div><strong>{{ s.Source }}:</strong> {{ s.avg_sold|round(0) }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div>
+              <div class="meta">Tổng sản phẩm</div>
+              <div class="value">{% set total_products = summary|map(attribute='count_product')|sum %}{{ total_products }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="charts">
+              <div class="chart-card">
+                <div class="chart-title">Giá trung bình theo sàn</div>
+                <div class="chart-canvas"><canvas id="priceChart"></canvas></div>
+              </div>
+              <div class="chart-row">
+                <div class="chart-card">
+                  <div class="chart-title">Lượng bán trung bình theo sàn</div>
+                  <div class="chart-canvas"><canvas id="soldChart"></canvas></div>
+                </div>
+                  <!-- <div class="chart-card notes" style="max-width:240px">
+                    <div class="chart-title"><i class="fas fa-info-circle" style="margin-right:6px; color:#0066ff;"></i> Ghi chú</div>
+                    <ul class="note-list">
+                      <li>Click vào cột để xem chi tiết</li>
+                      <li>Dữ liệu được lọc theo từ khóa tìm kiếm</li>
+                    </ul>
+                  </div> -->
+
+              </div>
+            </div>
+          </div>
+
+          <div class="right-col">
+            <div class="top-list">
+              <h4>🔥 Top 5 sản phẩm bán chạy</h4>
+              {% for p in topSold %}
+                <div class="top-item">
+                  <img src="{{ p.URL_Image }}" alt="Ảnh sản phẩm" style="width:48px; height:48px; border-radius:8px; object-fit:cover; margin-right:8px">
+                  <div style="max-width:65%">
+                    <strong><a href="{{ p.URL_Product }}" target="_blank" style="color:inherit; text-decoration:none">{{ p.ProductName }}</a></strong>
+                    <div class="muted">{{ p.Source }}</div>
+                  </div>
+                  <div class="right">
+                    {{ p.Quantity_Sold }}
+                    <div>{{ "{:,.0f}".format(p.Price|int) }} ₫</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px">
+          <h3 style="margin:0 0 8px 0">Tổng quan theo sàn</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Sàn</th>
+                <th>Giá TB </th>
+                <th>Lượng bán TB</th>
+                <th>Điểm đánh giá TB</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in summary %}
+              <tr>
+                <td>{{ row.Source }}</td>
+                <td>{{ "{:,.0f}".format(row.avg_price|round(0)) }} đ</td>
+                <td>{{ row.avg_sold|round(0) }}</td>
+                <td>{{ row.avg_rating|round(2) }} / 5</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="quick-actions" style="margin-top:28px">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center">
+            <a class="back" href="javascript:void(0)" onclick="goBackToList('{{ keyword }}')">⬅ Back</a>
+            <a class="back" href="/">HOME</a>
+            <!-- <a class="back" href="/dashboard?keyword={{ keyword }}">🔄 Tải lại dữ liệu</a> -->
+            <script>
+            function goBackToList(keyword) {
+              if (keyword) {
+                window.location.href = `/?keyword=${encodeURIComponent(keyword)}`;
+              } else {
+                window.history.back();
+              }
+            }
+            </script>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Convert Jinja objects to JS
+      const summary = JSON.parse('{{ summary|tojson|safe }}');
+      const topSold = JSON.parse('{{ topSold|tojson|safe }}');
+
+      const labels = summary.map(s => s.Source || 'Unknown');
+      const avgPrices = summary.map(s => Number(s.avg_price) || 0);
+      const avgSold = summary.map(s => Number(s.avg_sold) || 0);
+
+      // Shared options
+      const shared = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            padding: 8,
+            callbacks: {
+              label: ctx => {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const value = ctx.raw;
+                const percent = ((value / total) * 100).toFixed(1);
+                return `${ctx.label}: ${value.toLocaleString('vi-VN')} (${percent}%)`;
+              }
+            }
+          }
+        }
+      };
+
+      // Price chart (bar + line)
+      const priceCtx = document.getElementById('priceChart');
+      new Chart(priceCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Giá trung bình (₫)',
+              data: avgPrices,
+              backgroundColor: labels.map((_, i) => [
+                '#0066ff', '#00b894', '#ff7a59', '#6c5ce7', '#ffa502'
+              ][i % 5] + 'CC'),
+              borderColor: '#0066ff',
+              borderRadius: 8,
+              barThickness: 28,
+            },
+            {
+              type: 'line',
+              label: 'Giá (trend)',
+              data: avgPrices,
+              borderColor: '#00b894',
+              tension: 0.35,
+              pointRadius: 4,
+              pointBackgroundColor: '#00b894'
+            }
+          ]
+        },
+        options: {
+          ...shared,
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('vi-VN') + ' ₫' } }
+          }
+        }
+      });
+
+      // Sold chart (horizontal bar)
+      const soldCtx = document.getElementById('soldChart');
+      new Chart(soldCtx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: avgSold,
+            backgroundColor: [
+              'rgba(0,102,255,0.85)',    // xanh đậm hơn
+              'rgba(255,122,89,0.85)',   // cam đậm hơn
+              'rgba(0,184,148,0.85)',    // xanh lá đậm hơn
+              'rgba(255,206,86,0.85)',   // vàng đậm hơn
+              'rgba(153,102,255,0.85)'   // tím đậm hơn
+            ],
+            borderColor: '#fff',  // viền trắng giúp nổi bật
+            borderWidth: 2,
+          }]
+        },
+        options: { 
+          ...shared,
+          maintainAspectRatio: false,
+          cutout: '60%',  // giúp lỗ tròn cân hơn
+          layout: { padding: 10 },
+          plugins: { 
+            legend: { display: true, position: 'bottom' },
+            tooltip: shared.plugins.tooltip
+          }
+        }
+      });
+
+
+    </script>
+  </body>
+</html>

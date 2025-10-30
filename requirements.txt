@@ -1,0 +1,8 @@
+flask
+mysql-connector-python
+pandas
+matplotlib
+scikit-learn
+plotly
+requests
+
