@@ -22,13 +22,13 @@ def dashboard():
     cursor.execute("""
         SELECT Source, 
             AVG(CAST(Price AS UNSIGNED)) AS avg_price, 
+            SUM(CAST(Quantity_Sold AS UNSIGNED)) AS total_Sold,
             AVG(CAST(Quantity_Sold AS UNSIGNED)) AS avg_sold,
             AVG(CAST(Rating AS UNSIGNED)) as avg_rating,
             COUNT(Source_ProductID) AS count_product
         FROM products
-        WHERE ProductName LIKE %s
         GROUP BY Source;
-    """, ('%' + keyword.replace(" ", "%") + '%',))
+    """)
     summary_data = cursor.fetchall()
 
     cursor.execute("""
@@ -197,7 +197,7 @@ def home():
     if keyword:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM products WHERE ProductName LIKE %s", ('%' + keyword + '%',))
+        cursor.execute("SELECT * FROM products")
         products = cursor.fetchall()
         cursor.close()
         conn.close()

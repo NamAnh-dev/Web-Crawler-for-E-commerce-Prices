@@ -645,10 +645,10 @@
           <div class="card">
             <div class="icon"><i class="fa-solid fa-chart-line"></i></div>
             <div>
-              <div class="meta">Lượng bán TB theo từng sàn <br></div>
+              <div class="meta">Lượng bán theo từng sàn <br></div>
               <div class="value" style="font-size:13px; line-height:1.6">
                 {% for s in summary %}
-                  <div><strong>{{ s.Source }}:</strong> {{ s.avg_sold|round(0) }}</div>
+                  <div><strong>{{ s.Source }}:</strong> {{ s.total_Sold}}</div>
                 {% endfor %}
               </div>
             </div>
@@ -712,7 +712,7 @@
               <tr>
                 <th>Sàn</th>
                 <th>Giá TB </th>
-                <th>Lượng bán TB</th>
+                <th>Lượng bán</th>
                 <th>Điểm đánh giá TB</th>
               </tr>
             </thead>
@@ -721,7 +721,7 @@
               <tr>
                 <td>{{ row.Source }}</td>
                 <td>{{ "{:,.0f}".format(row.avg_price|round(0)) }} đ</td>
-                <td>{{ row.avg_sold|round(0) }}</td>
+                <td>{{ row.total_Sold }}</td>
                 <td>{{ row.avg_rating|round(2) }} / 5</td>
               </tr>
               {% endfor %}

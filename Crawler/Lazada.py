@@ -9,7 +9,7 @@ from utils import Save_to_database, Convert_text
 def Get_data(keyword):
     data_sp = []
     encoded = urllib.parse.quote(keyword)
-    for i in range(1, 2):
+    for i in range(1, 8):
         url = f"https://www.lazada.vn/catalog/?ajax=true&isFirstRequest=true&page={i}&q={encoded}"
         # url = f"https://www.lazada.vn/tag/{encoded}/?ajax=true&isFirstRequest=true&page={i}&catalog_redirect_tag=true&q={encoded}"
         response = requests.get(url, headers = LAZADA_HEADERS)
