@@ -1,0 +1,6 @@
+- hiển thị tên sản phẩm trang kết quả
+- Phân trang trang kết quả
+- thêm thanh tìm kiến trên trang kết quả
+- viết tool auto lấy headers
+- dấu sản phẩm yêu thích và cho vào giỏ hàng
+- so sánh sản phẩm yêu thích trong giỏ
