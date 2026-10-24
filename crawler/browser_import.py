@@ -1,15 +1,13 @@
-"""Import search results that you saved from your own browser (Lazada, Shopee).
+"""Import Lazada/Shopee search results that you saved from your own browser.
 
 Supported files:
-- .har   DevTools > Network > Export HAR (sanitized). Every Lazada or Shopee
-         search response inside the log is read; everything else is ignored.
+- .har   DevTools > Network > Export HAR. Every Lazada or Shopee search
+         response inside it is read; everything else is ignored.
 - .json  one saved search response
 - .html  a saved Lazada search page
-Files are only read, never stored by the app.
 """
 import base64
 import json
-from urllib.parse import parse_qs, urlparse
 
 import pandas as pd
 
@@ -17,6 +15,7 @@ from analysis.cleaning import COLUMNS
 from crawler import lazada, shopee
 
 PARSERS = {"Lazada": lazada, "Shopee": shopee}
+RAW_COLUMNS = [c for c in COLUMNS if c != "discount_pct"]  # discount is computed when cleaning
 
 
 def source_of_url(url):
@@ -32,14 +31,9 @@ def source_of_text(text):
     """Guess the marketplace of a single saved response from its content."""
     if "listItems" in text:
         return "Lazada"
-    if '"item_basic"' in text or '"itemid"' in text:
+    if '"item_basic"' in text:
         return "Shopee"
     return None
-
-
-def search_keyword(url):
-    query = parse_qs(urlparse(url).query)
-    return (query.get("q") or query.get("keyword") or [""])[0]
 
 
 def har_responses(text):
@@ -54,33 +48,21 @@ def har_responses(text):
         yield entry["request"]["url"], body
 
 
-def parse_response(source, body):
-    """Rows of one search response; an unexpected format gives no rows."""
-    parser = PARSERS[source]
-    try:
-        items = parser.items_from_response(body)
-    except (ValueError, AttributeError):
-        return []
-    return [parser.parse_item(item) for item in items]
-
-
 def read_file(filename, data):
-    """Products found in one saved file.
-
-    Returns (raw DataFrame, set of search keywords seen in the file).
-    """
+    """Raw products found in one saved file (an empty table if none)."""
     text = data.decode("utf-8-sig", errors="replace")
-    rows, keywords = [], set()
-
     if filename.lower().endswith(".har"):
-        for url, body in har_responses(text):
-            source = source_of_url(url)
-            if source:
-                rows += parse_response(source, body)
-                keywords.add(search_keyword(url))
+        responses = [(source_of_url(url), body) for url, body in har_responses(text)]
     else:
-        source = source_of_text(text)
-        if source:
-            rows = parse_response(source, text)
+        responses = [(source_of_text(text), text)]
 
-    return pd.DataFrame(rows, columns=[c for c in COLUMNS if c != "discount_pct"]), keywords - {""}
+    rows = []
+    for source, body in responses:
+        if source is None:
+            continue
+        parser = PARSERS[source]
+        try:
+            rows += [parser.parse_item(item) for item in parser.items_from_response(body)]
+        except (ValueError, AttributeError):  # not the data we expect: skip this response
+            continue
+    return pd.DataFrame(rows, columns=RAW_COLUMNS)

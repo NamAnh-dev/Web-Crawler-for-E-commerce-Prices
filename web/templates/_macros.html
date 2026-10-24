@@ -1,0 +1,25 @@
+{# Reusable pieces of HTML. Import with: {% import "_macros.html" as ui %} #}
+
+{# Price line: common range Q1–Q3 (bar), floor and median (marks).
+   b = price_band(...), pos = band_positions(...) from analysis/pricing.py #}
+{% macro price_line(b, pos, labels=True) %}
+<div class="band {{ 'band-mini' if not labels }}" role="img"
+     aria-label="Giá sàn {{ b.floor | vnd }}, khoảng phổ biến {{ b.q1 | vnd }} đến {{ b.q3 | vnd }}, trung vị {{ b.median | vnd }}">
+  <div class="band-track"></div>
+  <div class="band-iqr" style="left: {{ pos.q1 }}%; width: {{ pos.q3 - pos.q1 }}%"></div>
+  <div class="band-mark floor" style="left: calc({{ pos.floor }}% - 1px)"></div>
+  <div class="band-mark" style="left: calc({{ pos.median }}% - 1px)"></div>
+  {% if labels %}
+  <div class="band-label above {{ 'edge-left' if pos.floor < 12 }}" style="left: {{ pos.floor }}%">Giá sàn<strong>{{ b.floor | compact_vnd }}</strong></div>
+  <div class="band-label above {{ 'edge-right' if pos.median > 88 }}" style="left: {{ pos.median }}%">Trung vị<strong>{{ b.median | compact_vnd }}</strong></div>
+  <div class="band-label below {{ 'edge-left' if pos.q1 < 12 }}" style="left: {{ pos.q1 }}%"><strong>{{ b.q1 | compact_vnd }}</strong>Q1</div>
+  <div class="band-label below {{ 'edge-right' if pos.q3 > 88 }}" style="left: {{ pos.q3 }}%"><strong>{{ b.q3 | compact_vnd }}</strong>Q3</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# A number that counts up when the page opens (see static/js/count-up.js).
+   The final value is already in the HTML, so it also works without JavaScript. #}
+{% macro count(value, decimals=0, suffix="") %}
+<span data-count="{{ value }}" data-decimals="{{ decimals }}" data-suffix="{{ suffix }}">{{ value | number(decimals) }}{{ suffix }}</span>
+{%- endmacro %}

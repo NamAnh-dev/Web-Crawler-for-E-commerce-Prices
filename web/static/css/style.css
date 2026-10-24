@@ -97,6 +97,7 @@ p { margin: 0; }
 .nav a { color: var(--ink-2); padding: 6px 10px; border-radius: 8px; font-size: 14px; font-weight: 500; white-space: nowrap; }
 .nav a:hover, .nav a.active { color: var(--ink); background: var(--surface-2); text-decoration: none; }
 @media (max-width: 520px) { .nav .nav-extra { display: none; } }
+@media (max-width: 400px) { .nav .nav-home { display: none; } }  /* the logo already links home */
 
 .footer { margin-top: 64px; border-top: 1px solid var(--border); padding: 24px 0 40px; color: var(--ink-2); font-size: 13px; }
 .footer .container { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
@@ -256,8 +257,6 @@ main.container { padding-top: 28px; }
 .scope { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 20px; }
 .scope-label { font-size: 13px; color: var(--ink-2); margin-right: 4px; }
 
-.headline { display: grid; gap: 16px; margin-top: 20px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 900px) { .headline { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); } }
 .hero-figure-label { font-size: 14px; font-weight: 500; color: var(--ink-2); }
 .hero-figure { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 8px 0 12px; }
 @media (max-width: 600px) { .hero-figure { font-size: 40px; } }
@@ -311,7 +310,7 @@ main.container { padding-top: 28px; }
 /* inline bar inside a table cell */
 .cell-bar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .cell-bar-track { width: 72px; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; flex: none; }
-.cell-bar-fill { height: 100%; background: var(--accent); border-radius: 0 3px 3px 0; }
+.cell-bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 0 3px 3px 0; }
 
 .mini-list { list-style: none; margin: 0; padding: 0; }
 .mini-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
@@ -375,3 +374,138 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 .code-line { display: block; margin-top: 8px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); font: 13px ui-monospace, Consolas, monospace; color: var(--ink); overflow-x: auto; }
 .delta-down { color: var(--good); font-weight: 600; }
 .delta-up { color: var(--critical); font-weight: 600; }
+
+/* ==========================================================================
+   Look & feel: dark hero areas, cards and small animations
+   ========================================================================== */
+
+/* Any element with .on-dark re-defines the colour tokens, so every component
+   inside it (chips, inputs, the price line...) switches to light-on-dark. */
+.on-dark {
+  --ink: #f4f3ef;
+  --ink-2: #b4b2aa;
+  --surface: #1d1d1b;
+  --surface-2: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.14);
+  --accent: #4a92ea;
+  --accent-strong: #86b6ef;
+  --accent-wash: rgba(74, 146, 234, 0.18);
+  color: var(--ink);
+}
+.on-dark .btn-primary, .on-dark .btn-primary:hover { background: #2a78d6; }
+
+/* Home: full-width hero with a faint data grid in the background */
+.hero-band {
+  background-color: #121211;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.hero-grid { display: grid; gap: 40px; align-items: center; padding: 56px 16px 64px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); padding: 80px 24px 88px; } }
+.hero-copy h1 { font-size: 52px; line-height: 1.08; letter-spacing: -0.03em; }
+@media (max-width: 600px) { .hero-copy h1 { font-size: 36px; } .hero-grid { padding-top: 36px; } }
+.hero-copy .eyebrow { color: var(--accent-strong); }
+.hero-copy .lead { margin-top: 18px; font-size: 17px; color: var(--ink-2); max-width: 560px; }
+.hero-copy .lead strong { color: var(--ink); }
+.hero-copy .search-box { margin-top: 28px; }
+.hero-copy .examples { margin-top: 14px; color: var(--ink-2); }
+
+.preview {
+  display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.preview:hover { text-decoration: none; transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.28); }
+.preview-head { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--ink-2); margin-bottom: 18px; }
+.preview-keyword { color: var(--ink); font-weight: 600; }
+.preview-label { font-size: 13px; color: var(--ink-2); }
+.preview-figure { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; }
+.preview .band { margin-bottom: 36px; }
+.preview-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+.preview-stats span { display: block; font-size: 12px; color: var(--ink-2); }
+.preview-stats strong { font-size: 17px; font-weight: 600; }
+.preview-link { display: inline-block; margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--accent-strong); }
+
+/* Home: totals strip */
+.totals { display: grid; gap: 1px; margin-top: 8px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .totals { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.totals div { background: var(--surface); padding: 20px 24px; }
+.totals strong { display: block; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+.totals div > span { font-size: 13px; color: var(--ink-2); }
+.steps { margin-top: 24px; }
+
+/* Home: recent searches as cards */
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.run-cards { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .run-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1040px) { .run-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.run-card { display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.run-card:hover { text-decoration: none; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+.run-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.run-card-top h3 { font-size: 16px; }
+.run-card-label { margin-top: 14px; font-size: 12px; color: var(--ink-2); }
+.run-card-figure { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.run-card-meta { font-size: 12px; color: var(--ink-2); }
+.band-mini { margin: 14px 0 12px; height: 6px; }
+.band-mini .band-mark { top: -4px; bottom: -4px; }
+
+/* Search: waiting screen with the pipeline steps */
+.loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 10, 10, 0.72); backdrop-filter: blur(4px); }
+.loading[hidden] { display: none; }
+.loading-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+.loading-card h2 { font-size: 22px; margin-bottom: 18px; }
+.loading-steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 12px; }
+.loading-steps li { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; }
+.loading-steps li::before { content: ""; width: 18px; height: 18px; flex: none; border-radius: 50%; border: 2px solid var(--grid); box-sizing: border-box; }
+.loading-steps li.active { color: var(--ink); font-weight: 500; }
+.loading-steps li.active::before { border-color: var(--accent); border-right-color: transparent; animation: spin 0.8s linear infinite; }
+.loading-steps li.done { color: var(--ink-2); }
+.loading-steps li.done::before { border: 0; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 12px no-repeat; }
+
+/* Dashboard: dark headline panel */
+.hero-panel {
+  display: grid; gap: 28px; margin-top: 20px; padding: 28px; border-radius: 16px;
+  background: #121211; border: 1px solid rgba(255, 255, 255, 0.08); grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 900px) { .hero-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); padding: 32px 36px; align-items: center; } }
+.hero-panel .card-head { margin-bottom: 0; }
+.hero-panel .hero-figure { font-size: 56px; }
+@media (max-width: 600px) { .hero-panel .hero-figure { font-size: 40px; } }
+
+/* Dashboard: best deals as product cards */
+.deal-cards { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 720px) { .deal-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1040px) { .deal-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.deal-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.deal-card:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1); }
+.deal-image { display: block; aspect-ratio: 1; border-radius: 8px; background: #fff; overflow: hidden; margin-bottom: 4px; }
+.deal-image img { width: 100%; height: 100%; object-fit: contain; }
+.deal-score { position: absolute; top: 18px; left: 18px; padding: 3px 8px; border-radius: 999px; background: #121211; color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.deal-score small { font-weight: 500; opacity: 0.7; font-size: 10px; }
+.deal-name { font-size: 13px; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.deal-price { font-size: 16px; font-weight: 700; margin-top: auto; }
+.deal-meta { font-size: 12px; color: var(--ink-2); }
+
+/* Dark mode: the dark areas become a slightly raised surface */
+@media (prefers-color-scheme: dark) {
+  .hero-band { background-color: #161615; }
+  .hero-panel { background: #1a1a19; }
+  .deal-score { background: #3987e5; }
+}
+
+/* Gentle entrance animations (switched off when the user prefers less motion) */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.hero-copy, .preview, main > section { animation: rise 0.5s ease both; }
+.preview { animation-delay: 0.1s; }
+main > section:nth-of-type(2) { animation-delay: 0.05s; }
+main > section:nth-of-type(3) { animation-delay: 0.1s; }
+main > section:nth-of-type(n+4) { animation-delay: 0.15s; }
+.band-iqr { transform-origin: left center; animation: grow 0.8s 0.2s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

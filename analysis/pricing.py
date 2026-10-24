@@ -72,6 +72,11 @@ def deal_scores(df):
     return score.round(1).reindex(df.index)
 
 
+def main_category(df):
+    """The category with the most products: the one analysed by default."""
+    return df["category"].value_counts().idxmax()
+
+
 def add_analysis_columns(df):
     """Add `price_flag` and `deal_score` before the products are saved."""
     df = df.copy()
@@ -132,6 +137,13 @@ def band_positions(band):
     which runs from the cheapest normal product to the 90th percentile."""
     return {key: log_position(band[key], band["min"], band["ceiling"])
             for key in ("floor", "q1", "median", "q3")}
+
+
+def summarize(df):
+    """Reference prices of the main category (cards on the home page)."""
+    category = main_category(df)
+    band = price_band(df[df["category"] == category])
+    return {"category": category, "band": band, "pos": band_positions(band)}
 
 
 def source_comparison(df):
@@ -244,7 +256,6 @@ def build_dashboard(df):
         "best_segment": best_segment,
         "worst_segment": worst_segment,
         "brands": records(group_summary(df, "brand")),
-        "sellers": records(group_summary(df, "seller")),
         "sources": source_comparison(df) if df["source"].nunique() > 1 else [],
         "top_deals": records(df.nlargest(5, "deal_score")),
         "best_sellers": records(df.nlargest(5, "sold")),

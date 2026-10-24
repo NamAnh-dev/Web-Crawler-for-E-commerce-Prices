@@ -39,7 +39,6 @@
   <code class="code-line">python collect.py "{{ run.keyword }}"</code>
   <p class="muted">Hoặc để máy tự thu thập mọi từ khóa trong keywords.txt mỗi ngày:</p>
   <code class="code-line">.\schedule_daily.ps1 -At 08:00</code>
-  <p class="muted">Sau 7 ngày, trang này còn kiểm tra được các mức giảm giá có thật hay không.</p>
 </section>
 {% else %}
 {% set first, last = snaps[0], snaps[-1] %}
@@ -139,22 +138,6 @@
     </ul>
     {% else %}<p class="muted">Không có sản phẩm nào tăng giá.</p>{% endif %}
   </div>
-</section>
-
-<section class="section card">
-  <div class="card-head">
-    <h2>Giảm giá thật hay ảo?</h2>
-    <p>sản phẩm đang "giảm giá" từ một mức giá gốc chưa từng được bán trong suốt thời gian theo dõi</p>
-  </div>
-  {% if history.unseen is none %}
-    <p class="muted">Cần ít nhất 7 ngày dữ liệu (hiện có {{ history.days }} ngày).</p>
-  {% elif history.unseen %}
-  <ul class="mini-list">
-    {% for p in history.unseen %}
-      {% call product_item(p) %}−{{ p.discount_pct }}% từ {{ p.original_price | compact_vnd }}<br><span class="muted">giá cao nhất từng thấy {{ p.highest_price_seen | compact_vnd }}</span>{% endcall %}
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Không phát hiện mức giảm giá đáng ngờ trong {{ history.days }} ngày theo dõi.</p>{% endif %}
 </section>
 
 <script type="application/json" id="history-data">{{ snaps | tojson }}</script>

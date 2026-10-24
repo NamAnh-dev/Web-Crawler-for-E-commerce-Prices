@@ -11,8 +11,8 @@ from flask import Flask, Response, abort, flash, redirect, render_template, requ
 
 import config
 from analysis.cleaning import normalize_text
-from analysis.history import build_history, main_category
-from analysis.pricing import build_dashboard
+from analysis.history import build_history
+from analysis.pricing import build_dashboard, main_category, summarize
 from database import db
 from run_crawl import import_files, run_pipeline
 
@@ -83,7 +83,10 @@ def get_run_or_404(run_id):
 
 @app.route("/")
 def home():
-    return render_template("home.html", runs=db.recent_runs())
+    runs = db.recent_runs(6)
+    for run in runs:  # reference prices shown on each card
+        run["summary"] = summarize(db.load_products(run["id"]))
+    return render_template("home.html", runs=runs, totals=db.totals())
 
 
 @app.route("/search", methods=["POST"])
@@ -163,47 +166,36 @@ def import_data(run_id):
         return render_template("import.html", **run_context(run))
 
     files = [(f.filename, f.read()) for f in request.files.getlist("files") if f.filename]
-    if not files:
-        flash("Hãy chọn ít nhất một file.")
-        return redirect(url_for("import_data", run_id=run_id))
     try:
-        summary = import_files(run_id, files)
-    except ValueError:
-        flash("Không đọc được file. Hãy dùng file .har xuất từ DevTools, hoặc file .json/.html đã lưu.")
+        added = import_files(run_id, files)
+    except ValueError:  # not a valid HAR/JSON file
+        added = {}
+
+    if not added:
+        flash("Không tìm thấy sản phẩm Lazada hoặc Shopee phù hợp trong file. "
+              "Hãy mở DevTools trước khi tìm kiếm, rồi xuất lại file HAR.")
         return redirect(url_for("import_data", run_id=run_id))
 
-    if summary["found"] == 0:
-        flash("Không có kết quả tìm kiếm Lazada hoặc Shopee nào trong file. "
-              "Hãy mở DevTools trước khi tìm kiếm rồi xuất lại file HAR.")
-        return redirect(url_for("import_data", run_id=run_id))
-
-    added = ", ".join(f"{source} {count}" for source, count in summary["per_source"].items())
-    flash(f"Đã đọc {summary['found']} sản phẩm, giữ {summary['kept']} sản phẩm liên quan ({added or 'không có'}).")
-    if summary["accuracy"] is not None:
-        flash(f"Danh mục được dự đoán từ tên sản phẩm (độ chính xác khi kiểm tra trên Tiki: "
-              f"{summary['accuracy'] * 100:.0f}%); {summary['unknown']} sản phẩm chưa phân loại được.")
-    other = [k for k in summary["keywords"] if normalize_text(k) != normalize_text(run["keyword"])]
-    if other:
-        flash(f"Lưu ý: file chứa kết quả của từ khóa khác ({', '.join(other)}); "
-              f"chỉ sản phẩm liên quan đến “{run['keyword']}” được giữ lại.")
-    return redirect(url_for("products", run_id=run_id))
+    flash("Đã thêm " + ", ".join(f"{count} sản phẩm {source}" for source, count in added.items()) + ".")
+    return redirect(url_for("dashboard", run_id=run_id))
 
 
 @app.route("/history")
 def history():
     keyword = request.args.get("keyword", "")
     data = db.load_history(keyword)
-    data = data[data["source"] == "Tiki"]
+    data = data[data["source"] == "Tiki"]  # only Tiki is collected every day
     if data.empty:
         abort(404)
-    category = request.args.get("category") or main_category(data)
+
+    latest = data[data["run_id"] == data["run_id"].max()]
+    category = request.args.get("category") or main_category(latest)
     if not (data["category"] == category).any():
         abort(404)
-    latest_run = db.get_run(int(data["run_id"].max()))
-    categories = data[data["run_id"] == latest_run["id"]]["category"].value_counts()
+    counts = latest["category"].value_counts()
 
-    return render_template("history.html", **run_context(latest_run), category=category,
-                           categories=categories[categories >= 3].index.tolist(),
+    return render_template("history.html", **run_context(db.get_run(int(latest["run_id"].iloc[0]))),
+                           category=category, categories=counts[counts >= 3].index.tolist(),
                            history=build_history(data, category))
 
 

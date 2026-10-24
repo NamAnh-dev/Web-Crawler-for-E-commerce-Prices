@@ -33,11 +33,6 @@ def get_connection():
 def init_db():
     conn = get_connection()
     conn.executescript(SCHEMA_FILE.read_text(encoding="utf-8"))
-    # a database created by an older version of the app misses this column
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(products)")}
-    if "category_predicted" not in columns:
-        conn.execute("ALTER TABLE products ADD COLUMN category_predicted INTEGER NOT NULL DEFAULT 0")
-        conn.commit()
     conn.close()
 
 
@@ -57,14 +52,13 @@ def save_run(keyword, products, notes=None):
         conn.close()
 
 
-def replace_products(run_id, products, notes=None):
+def replace_products(run_id, products):
     """Replace all products of a run (used after importing Lazada/Shopee data)."""
     conn = get_connection()
     try:
         conn.execute("DELETE FROM products WHERE run_id = ?", (run_id,))
         products.assign(run_id=run_id).to_sql("products", conn, if_exists="append", index=False)
-        conn.execute("UPDATE search_runs SET product_count = ?, notes = ? WHERE id = ?",
-                     (len(products), notes, run_id))
+        conn.execute("UPDATE search_runs SET product_count = ? WHERE id = ?", (len(products), run_id))
         conn.commit()
     finally:
         conn.close()
@@ -81,6 +75,19 @@ def fetch_all(sql, params=()):
 def get_run(run_id):
     rows = fetch_all("SELECT * FROM search_runs WHERE id = ?", (run_id,))
     return rows[0] if rows else None
+
+
+def totals():
+    """Numbers shown on the home page."""
+    return fetch_all(
+        """
+        SELECT COUNT(*) AS runs,
+               COALESCE(SUM(product_count), 0) AS products,
+               COUNT(DISTINCT keyword) AS keywords
+        FROM search_runs
+        WHERE product_count > 0
+        """
+    )[0]
 
 
 def recent_runs(limit=8):
