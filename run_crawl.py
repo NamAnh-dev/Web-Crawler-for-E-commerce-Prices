@@ -13,9 +13,8 @@ import sys
 import pandas as pd
 
 import config
-from analysis import categories
-from analysis.cleaning import COLUMNS, UNKNOWN_CATEGORY, clean_products
-from analysis.pricing import add_analysis_columns
+from analysis.cleaning import COLUMNS, clean_products
+from analysis.pricing import add_analysis_columns, main_category
 from crawler import browser_import, tiki
 from database import db
 
@@ -45,37 +44,24 @@ def import_files(run_id, files):
     """Add Lazada/Shopee products saved from the browser to an existing run.
 
     files: list of (filename, file content as bytes).
-    Returns a summary for the user.
+    Returns the number of products added per marketplace, e.g. {"Shopee": 120}.
     """
     run = db.get_run(run_id)
-    frames, keywords = [], set()
-    for filename, data in files:
-        raw, found = browser_import.read_file(filename, data)
-        frames.append(raw)
-        keywords |= found
-    raw = pd.concat(frames, ignore_index=True)
-    imported = clean_products(raw, run["keyword"])
-    summary = {"found": len(raw), "kept": len(imported), "keywords": sorted(keywords),
-               "per_source": imported["source"].value_counts().to_dict(), "accuracy": None}
+    raw = pd.concat([browser_import.read_file(name, data) for name, data in files], ignore_index=True)
+    imported = clean_products(raw, run["keyword"])  # keeps names that contain the keyword
     if imported.empty:
-        return summary
+        return {}
 
-    # Lazada and Shopee send no category name: learn it from Tiki's products
+    # Lazada and Shopee send no category name, so their products go into the
+    # main category of this search (the one the dashboard shows by default).
     current = db.load_products(run_id)
-    labelled = current[(current["category_predicted"] == 0) & (current["category"] != UNKNOWN_CATEGORY)]
-    model, summary["accuracy"] = categories.train(labelled)
-    if model is not None:
-        imported["category"] = categories.predict(model, imported["name"])
-    elif labelled["category"].nunique() == 1:  # only one category: nothing to choose
-        imported["category"] = labelled["category"].iloc[0]
-    imported["category_predicted"] = 1
-    summary["unknown"] = int((imported["category"] == UNKNOWN_CATEGORY).sum())
+    imported["category"] = main_category(current)
 
-    # merge, then recompute flags and scores: products are now compared across sources
-    combined = pd.concat([current[COLUMNS + ["category_predicted"]], imported], ignore_index=True)
+    # merge, then recompute flags and scores: products are now compared across marketplaces
+    combined = pd.concat([current[COLUMNS], imported], ignore_index=True)
     combined = combined.drop_duplicates(subset=["source", "product_id"], keep="last")
-    db.replace_products(run_id, add_analysis_columns(combined), notes=run["notes"])
-    return summary
+    db.replace_products(run_id, add_analysis_columns(combined))
+    return imported["source"].value_counts().to_dict()
 
 
 if __name__ == "__main__":

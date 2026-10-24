@@ -1,41 +1,72 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}EcomCheck · Giá bao nhiêu là hợp lý?{% endblock %}
 
-{% block content %}
-<section class="hero">
-  <p class="eyebrow">Phân tích giá sàn thương mại điện tử</p>
-  <h1>Giá bao nhiêu là hợp lý?</h1>
-  <p class="lead">
-    Nhập tên một sản phẩm. EcomCheck thu thập các sản phẩm đang bán trên Tiki,
-    làm sạch dữ liệu rồi tính <strong>giá sàn tham khảo</strong>, khoảng giá phổ biến
-    và những lựa chọn đáng mua nhất. Có thể thêm dữ liệu Lazada, Shopee bạn tự lưu từ trình duyệt
-    để so sánh giữa các sàn.
-  </p>
+{% block hero %}
+<section class="hero-band on-dark">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Phân tích giá thương mại điện tử</p>
+      <h1>Giá bao nhiêu<br>là hợp lý?</h1>
+      <p class="lead">
+        Nhập tên một sản phẩm. EcomCheck thu thập các sản phẩm đang bán trên Tiki, làm sạch dữ liệu
+        rồi tính <strong>giá sàn tham khảo</strong>, khoảng giá phổ biến và những lựa chọn đáng mua nhất.
+      </p>
 
-  <form class="search-box" method="post" action="{{ url_for('search') }}" id="search-form">
-    <label for="keyword" class="visually-hidden">Tên sản phẩm</label>
-    <input class="input" id="keyword" name="keyword" type="search" minlength="2" maxlength="80"
-           placeholder="Ví dụ: chuột gaming" autocomplete="off" required autofocus>
-    <button class="btn btn-primary" type="submit">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <span>Phân tích giá</span>
-    </button>
-  </form>
-  <p class="search-status" id="search-status" aria-live="polite"></p>
+      <form class="search-box" method="post" action="{{ url_for('search') }}" id="search-form">
+        <label for="keyword" class="visually-hidden">Tên sản phẩm</label>
+        <input class="input" id="keyword" name="keyword" type="search" minlength="2" maxlength="80"
+               placeholder="Ví dụ: chuột gaming" autocomplete="off" required autofocus>
+        <button class="btn btn-primary" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          Phân tích giá
+        </button>
+      </form>
 
-  <div class="examples">
-    <span>Thử nhanh:</span>
-    {% for example in ["chuột gaming", "tai nghe bluetooth", "bàn phím cơ", "nồi chiên không dầu", "sạc dự phòng"] %}
-      <button class="chip" type="button" data-example="{{ example }}">{{ example }}</button>
-    {% endfor %}
+      <div class="examples">
+        <span>Thử nhanh:</span>
+        {% for example in ["chuột gaming", "tai nghe bluetooth", "bàn phím cơ", "nồi chiên không dầu"] %}
+          <button class="chip" type="button" data-example="{{ example }}">{{ example }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if runs %}
+    {% set latest = runs[0] %}{% set s = latest.summary %}
+    <a class="preview" href="{{ url_for('dashboard', run_id=latest.id) }}">
+      <div class="preview-head">
+        <span>Kết quả gần nhất</span>
+        <span class="preview-keyword">{{ latest.keyword }}</span>
+      </div>
+      <p class="preview-label">Giá sàn tham khảo · {{ s.category }}</p>
+      <p class="preview-figure">{{ ui.count(s.band.floor, suffix=" ₫") }}</p>
+      {{ ui.price_line(s.band, s.pos) }}
+      <div class="preview-stats">
+        <div><span>Trung vị</span><strong>{{ s.band.median | compact_vnd }}</strong></div>
+        <div><span>Theo lượt bán</span><strong>{{ s.band.sales_weighted_median | compact_vnd }}</strong></div>
+        <div><span>Sản phẩm</span><strong>{{ latest.product_count | number }}</strong></div>
+      </div>
+      <span class="preview-link">Xem dashboard →</span>
+    </a>
+    {% endif %}
   </div>
 </section>
+{% endblock %}
+
+{% block content %}
+{% if totals.runs %}
+<section class="totals" aria-label="Tổng quan dữ liệu">
+  <div><strong>{{ ui.count(totals.products) }}</strong><span>sản phẩm đã thu thập và phân tích</span></div>
+  <div><strong>{{ ui.count(totals.runs) }}</strong><span>lần thu thập dữ liệu</span></div>
+  <div><strong>{{ ui.count(totals.keywords) }}</strong><span>từ khóa sản phẩm</span></div>
+</section>
+{% endif %}
 
 <section class="steps" aria-label="Cách hoạt động">
   <div class="step">
     <span class="step-no">01</span>
     <h3>Thu thập</h3>
-    <p>Gọi API tìm kiếm công khai, tối đa 5 trang (200 sản phẩm), nghỉ 1 giây giữa các lần gọi.</p>
+    <p>Gọi API tìm kiếm công khai của Tiki, tối đa 200 sản phẩm, nghỉ giữa các lần gọi.</p>
   </div>
   <div class="step">
     <span class="step-no">02</span>
@@ -45,67 +76,62 @@
   <div class="step">
     <span class="step-no">03</span>
     <h3>Phân tích</h3>
-    <p>Phát hiện giá bất thường (IQR), tính giá sàn tham khảo và điểm "đáng mua" cho từng sản phẩm.</p>
+    <p>Phát hiện giá bất thường, tính giá sàn tham khảo và điểm "đáng mua" cho từng sản phẩm.</p>
   </div>
   <div class="step">
     <span class="step-no">04</span>
     <h3>Trình bày</h3>
-    <p>Lọc, sắp xếp, xem dashboard theo danh mục và tải dữ liệu về dạng CSV.</p>
+    <p>Dashboard theo danh mục, so sánh với Lazada/Shopee, lịch sử giá, tải CSV.</p>
   </div>
 </section>
 
 {% if runs %}
-<section class="section card">
-  <div class="card-head">
+<section class="section">
+  <div class="section-head">
     <h2>Tìm kiếm gần đây</h2>
-    <p>Mỗi lần tìm kiếm là một ảnh chụp thị trường tại thời điểm đó.</p>
+    <p class="muted small">Mỗi lần tìm kiếm là một ảnh chụp thị trường tại thời điểm đó.</p>
   </div>
-  <div class="table-wrap">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Từ khóa</th>
-          <th>Thời điểm thu thập</th>
-          <th class="right">Sản phẩm</th>
-          <th class="right">Xem</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for run in runs %}
-        <tr class="row-link">
-          <td><a href="{{ url_for('products', run_id=run.id) }}">{{ run.keyword }}</a></td>
-          <td class="muted num">{{ run.created_at | datetime_vn }}</td>
-          <td class="right">{{ run.product_count | number }}</td>
-          <td class="right">
-            <a href="{{ url_for('products', run_id=run.id) }}">Sản phẩm</a> ·
-            <a href="{{ url_for('dashboard', run_id=run.id) }}">Phân tích</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="run-cards">
+    {% for run in runs %}
+    {% set s = run.summary %}
+    <a class="run-card" href="{{ url_for('dashboard', run_id=run.id) }}">
+      <div class="run-card-top">
+        <h3>{{ run.keyword }}</h3>
+        <span class="muted small num">{{ run.created_at | datetime_vn }}</span>
+      </div>
+      <p class="run-card-label">Giá sàn tham khảo</p>
+      <p class="run-card-figure">{{ s.band.floor | vnd }}</p>
+      {{ ui.price_line(s.band, s.pos, labels=False) }}
+      <p class="run-card-meta">Phổ biến {{ s.band.q1 | compact_vnd }} – {{ s.band.q3 | compact_vnd }} · {{ run.product_count | number }} sản phẩm</p>
+    </a>
+    {% endfor %}
   </div>
 </section>
 {% endif %}
+
+{# Shown while the server collects and analyses: see static/js/count-up.js #}
+<div class="loading" id="loading" hidden>
+  <div class="loading-card" role="status" aria-live="polite">
+    <p class="eyebrow">Đang phân tích</p>
+    <h2 id="loading-keyword"></h2>
+    <ol class="loading-steps">
+      <li>Thu thập sản phẩm từ Tiki</li>
+      <li>Làm sạch và lọc sản phẩm liên quan</li>
+      <li>Tính giá sàn, khoảng giá và điểm đáng mua</li>
+      <li>Lưu kết quả và dựng dashboard</li>
+    </ol>
+    <p class="muted small">Thường mất khoảng 5–10 giây.</p>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Crawling takes a few seconds: show progress and block double submits.
-  const form = document.getElementById("search-form");
-  const input = document.getElementById("keyword");
-
-  form.addEventListener("submit", () => {
-    const button = form.querySelector("button");
-    button.disabled = true;
-    button.querySelector("span").textContent = "Đang thu thập…";
-    document.getElementById("search-status").textContent =
-      "Đang lấy dữ liệu và phân tích, thường mất khoảng 5–10 giây.";
-  });
-
+  // Example chips fill the search box and submit it.
   document.querySelectorAll("[data-example]").forEach((chip) => {
     chip.addEventListener("click", () => {
-      input.value = chip.dataset.example;
+      const form = document.getElementById("search-form");
+      form.keyword.value = chip.dataset.example;
       form.requestSubmit();
     });
   });

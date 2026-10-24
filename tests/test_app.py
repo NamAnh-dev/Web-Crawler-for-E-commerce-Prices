@@ -102,7 +102,7 @@ def test_import_har_adds_lazada_and_shopee(client):
     products = db.load_products(1)
     imported = products[products["source"] != "Tiki"]
     assert sorted(imported["source"]) == ["Lazada", "Lazada", "Shopee"]
-    assert (imported["category_predicted"] == 1).all()
+    assert (imported["category"] == "Chuột Chơi Game").all()   # main category of the search
     assert db.get_run(1)["product_count"] == len(products)
     assert client.get("/run/1/dashboard").status_code == 200   # marketplace comparison renders
 
@@ -111,7 +111,7 @@ def test_import_without_search_results(client):
     empty = (io.BytesIO(b'{"log": {"entries": []}}'), "empty.har")
     response = client.post("/run/1/import", data={"files": empty}, content_type="multipart/form-data",
                            follow_redirects=True)
-    assert "Không có kết quả tìm kiếm" in response.data.decode()
+    assert "Không tìm thấy sản phẩm Lazada hoặc Shopee" in response.data.decode()
 
 
 def test_history_compares_two_snapshots(client):

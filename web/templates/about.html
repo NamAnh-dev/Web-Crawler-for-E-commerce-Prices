@@ -36,7 +36,7 @@
     <li>Gộp các tên "OEM", "No Brand" thành không thương hiệu.</li>
     <li><strong>Lọc sản phẩm liên quan:</strong> giữ sản phẩm có đủ các từ của từ khóa trong tên (không phân biệt dấu),
       <em>hoặc</em> thuộc danh mục chính của nhóm sản phẩm đó. Nhờ vậy "Chuột chơi game Logitech" vẫn được giữ khi tìm "chuột gaming".</li>
-    <li><strong>Danh mục cho Lazada và Shopee:</strong> hai sàn này không gửi tên danh mục, nên danh mục được dự đoán từ tên sản phẩm bằng TF-IDF (n-gram ký tự) và hồi quy logistic, học từ các sản phẩm Tiki của cùng lần tìm kiếm. Chỉ giữ dự đoán có xác suất từ 50% trở lên; độ chính xác kiểm tra chéo trên Tiki được báo mỗi lần nhập.</li>
+    <li><strong>Lazada và Shopee</strong> không gửi tên danh mục: chỉ giữ sản phẩm có tên chứa đủ từ khóa, và xếp chúng vào danh mục chính của lần tìm kiếm.</li>
   </ol>
 
   <h2>3. Các chỉ số</h2>
@@ -62,12 +62,11 @@
   <ul>
     <li><strong>Giá của cùng sản phẩm</strong>: thay đổi giá trung vị của những sản phẩm có mặt ở cả lần đầu và lần cuối. Trung vị toàn thị trường có thể đổi chỉ vì tập sản phẩm khác nhau, nên đây mới là thước đo biến động giá thật.</li>
     <li><strong>Bán được trong giai đoạn</strong> = "đã bán" lần cuối − "đã bán" lần đầu, vì sàn công bố số cộng dồn.</li>
-    <li><strong>Giảm giá thật hay ảo</strong> (sau ít nhất 7 ngày): sản phẩm đang giảm giá từ một "giá gốc" chưa từng được bán trong suốt thời gian theo dõi.</li>
   </ul>
 
   <h2>4. Hạn chế</h2>
   <ul>
-    <li>Dữ liệu Lazada và Shopee chỉ gồm các trang người dùng đã lưu, nên số sản phẩm giữa các sàn không bằng nhau; danh mục dự đoán có thể sai với tên sản phẩm mơ hồ.</li>
+    <li>Dữ liệu Lazada và Shopee chỉ gồm các trang người dùng đã lưu, nên số sản phẩm giữa các sàn không bằng nhau; một vài phụ kiện có tên chứa từ khóa (ví dụ lót chuột gaming) có thể lẫn vào.</li>
     <li>Mỗi lần tìm kiếm chỉ là một thời điểm; giá có thể đổi theo giờ và theo khuyến mãi, voucher không được tính.</li>
     <li>"Đã bán" là số cộng dồn do sàn công bố, không phải doanh số trong một khoảng thời gian cố định.</li>
     <li>Chỉ lấy 200 kết quả đầu tiên theo thứ tự xếp hạng của sàn, nên có thể thiên về sản phẩm được quảng bá.</li>

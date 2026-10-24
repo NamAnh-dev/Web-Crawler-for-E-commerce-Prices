@@ -1,24 +1,15 @@
-"""Analyse how the market of one keyword changes between snapshots.
+"""Compare the snapshots of one keyword (collect.py saves one every day).
 
-collect.py saves a new snapshot every day. Comparing them shows:
-- how the reference prices move over time;
-- which products changed price;
-- real sales between two snapshots: Tiki's "sold" is cumulative, so
-  sold(latest) - sold(first) = units sold in between;
-- discounts whose "original price" was never actually charged.
+- Reference prices of each snapshot, to see the market move over time.
+- Like-for-like price change: only products present in the first AND the
+  latest snapshot, so new or removed products cannot fake a price change.
+- Units sold in between: Tiki's "sold" is cumulative, so latest - first.
 """
 import pandas as pd
 
 from analysis.pricing import price_band, records
 
-MIN_DAYS_FOR_DISCOUNT_CHECK = 7
 KEY = ["source", "product_id"]
-
-
-def main_category(history):
-    """Biggest category of the latest snapshot."""
-    latest = history[history["run_id"] == history["run_id"].max()]
-    return latest["category"].value_counts().idxmax()
 
 
 def snapshot_table(history):
@@ -40,41 +31,25 @@ def product_changes(history):
     return both.reset_index()
 
 
-def unseen_original_prices(history):
-    """Discounted products whose "original price" was never seen as a real price.
-
-    If a product is always "on sale" from a price it was never sold at during
-    the whole period, the advertised discount is probably inflated.
-    """
-    highest_seen = history.groupby(KEY)["price"].max().rename("highest_price_seen")
-    latest = history[history["run_id"] == history["run_id"].max()]
-    latest = latest[latest["discount_pct"] > 0].join(highest_seen, on=KEY)
-    return latest[latest["original_price"] > latest["highest_price_seen"]]
-
-
 def build_history(history, category):
     """Everything the history page needs, for one category of one keyword.
 
-    Only Tiki is collected every day, so imported Lazada/Shopee rows are left out
-    to keep the snapshots comparable.
+    Only Tiki is collected every day, so imported Lazada/Shopee products are
+    left out to keep the snapshots comparable.
     """
     data = history[(history["category"] == category) & (history["source"] == "Tiki")]
     snapshots = snapshot_table(data)
     times = pd.to_datetime(snapshots["created_at"])
-    days = (times.iloc[-1] - times.iloc[0]).days
+    result = {"snapshots": records(snapshots), "days": (times.iloc[-1] - times.iloc[0]).days, "changes": None}
 
-    result = {"snapshots": records(snapshots), "days": days, "changes": None, "unseen": None}
     if len(snapshots) >= 2:
         changes = product_changes(data)
         result["changes"] = {
             "matched": len(changes),
-            # like-for-like: the same products, so a different product mix cannot fake a change
             "median_change_pct": changes["price_change_pct"].median() if len(changes) else 0,
+            "changed_share": 100 * (changes["price_change_pct"] != 0).mean() if len(changes) else 0,
             "top_sellers": records(changes[changes["sold_between"] > 0].nlargest(5, "sold_between")),
             "price_drops": records(changes[changes["price_change_pct"] < 0].nsmallest(5, "price_change_pct")),
             "price_rises": records(changes[changes["price_change_pct"] > 0].nlargest(5, "price_change_pct")),
-            "changed_share": 100 * (changes["price_change_pct"] != 0).mean() if len(changes) else 0,
         }
-    if days >= MIN_DAYS_FOR_DISCOUNT_CHECK:
-        result["unseen"] = records(unseen_original_prices(data).nlargest(10, "discount_pct"))
     return result

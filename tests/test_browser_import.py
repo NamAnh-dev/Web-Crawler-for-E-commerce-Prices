@@ -6,20 +6,18 @@ from samples import make_har, shopee_item
 
 
 def test_read_har_finds_both_marketplaces():
-    raw, keywords = browser_import.read_file("search.har", make_har())
+    raw = browser_import.read_file("search.har", make_har())
     assert sorted(raw["source"]) == ["Lazada", "Lazada", "Shopee"]
-    assert keywords == {"chuột gaming"}
 
 
 def test_read_single_saved_response():
     body = json.dumps({"items": [shopee_item(11, "Chuột Gaming A")]}).encode()
-    raw, _ = browser_import.read_file("response.json", body)
+    raw = browser_import.read_file("response.json", body)
     assert list(raw["source"]) == ["Shopee"]
 
 
 def test_unknown_file_gives_no_rows():
-    raw, keywords = browser_import.read_file("notes.json", b'{"hello": "world"}')
-    assert raw.empty and keywords == set()
+    assert browser_import.read_file("notes.json", b'{"hello": "world"}').empty
 
 
 def test_shopee_parse_item_converts_units():
