@@ -334,3 +334,44 @@ main.container { padding-top: 28px; }
 @media (min-width: 720px) { .pipeline { grid-template-columns: repeat(4, 1fr); } }
 .pipeline div { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: var(--ink-2); }
 .pipeline strong { display: block; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+
+/* ---------- Sources (one fixed colour per marketplace, used on marks only) ---------- */
+:root { --src-tiki: #2a78d6; --src-shopee: #eb6834; --src-lazada: #1baf7a; }
+@media (prefers-color-scheme: dark) { :root { --src-tiki: #3987e5; --src-shopee: #d95926; --src-lazada: #199e70; } }
+.source-tag { display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; }
+.source-tag:last-child { margin-right: 0; }
+.source-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+.src-tiki { background: var(--src-tiki); }
+.src-shopee { background: var(--src-shopee); }
+.src-lazada { background: var(--src-lazada); }
+
+.run-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* source comparison: one price line per marketplace, same log scale */
+.range-cell { min-width: 180px; }
+.range { position: relative; height: 20px; }
+.range-track { position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--surface-2); border-radius: 1px; }
+.range-iqr { position: absolute; top: 5px; height: 10px; border-radius: 5px; opacity: 0.9; }
+.range-median { position: absolute; top: 3px; width: 2px; height: 14px; background: var(--ink); border-radius: 1px; }
+.range-floor { position: absolute; top: 4px; width: 2px; height: 12px; background: var(--ink-2); border-radius: 1px; }
+
+/* ---------- Import page ---------- */
+.how-to { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 20px; }
+@media (min-width: 900px) { .how-to { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.how-to ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; }
+.how-to li { margin: 6px 0; }
+.how-to li strong, .how-to li kbd { color: var(--ink); }
+kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; background: var(--surface); }
+.upload { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px; }
+.upload input[type="file"] { font: 14px var(--font); color: var(--ink-2); max-width: 100%; }
+.upload input[type="file"]::file-selector-button { height: 40px; padding: 0 14px; margin-right: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
+.note { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
+
+/* ---------- History page ---------- */
+.empty-state { padding: 32px 24px; text-align: left; }
+.empty-state h2 { margin-bottom: 8px; }
+.empty-state p + p { margin-top: 8px; }
+.code-line { display: block; margin-top: 8px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); font: 13px ui-monospace, Consolas, monospace; color: var(--ink); overflow-x: auto; }
+.delta-down { color: var(--good); font-weight: 600; }
+.delta-up { color: var(--critical); font-weight: 600; }

@@ -89,8 +89,8 @@
       <div class="product-meta">
         {% if p.brand %}<span class="meta">{{ p.brand }}</span>{% endif %}
         {% if p.seller %}<span class="meta">{{ p.seller }}</span>{% endif %}
-        {% if not filters.category %}<span class="meta">{{ p.category }}</span>{% endif %}
-        {% if sources | length > 1 %}<span class="meta">{{ p.source }}</span>{% endif %}
+        {% if not filters.category %}<span class="meta">{{ p.category }}{% if p.category_predicted %} (dự đoán){% endif %}</span>{% endif %}
+        {% if sources | length > 1 %}<span class="meta source-tag"><span class="source-dot src-{{ p.source | lower }}"></span>{{ p.source }}</span>{% endif %}
         {% if p.price_flag == "low" %}
           <span class="badge" title="Rẻ bất thường so với sản phẩm cùng danh mục (quy tắc IQR)"><span class="dot"></span>Giá thấp bất thường</span>
         {% elif p.price_flag == "high" %}

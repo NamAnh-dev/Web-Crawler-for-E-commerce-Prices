@@ -105,6 +105,53 @@
   </div>
 </section>
 
+{# ---- Marketplace comparison (when Lazada/Shopee data was imported) ---- #}
+{% if data.sources | length > 1 %}
+<section class="section card">
+  <div class="card-head">
+    <h2>So sánh giữa các sàn</h2>
+    <p>cùng danh mục, đã bỏ giá bất thường</p>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sàn</th><th class="right">Sản phẩm</th><th class="right">Giá sàn</th><th class="right">Trung vị</th>
+          <th class="right">Giá theo lượt bán</th><th class="right">Lượt bán</th><th class="range-cell">Khoảng Q1–Q3 (thang log)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in data.sources %}
+        <tr>
+          <td><span class="source-tag"><span class="source-dot src-{{ s.source | lower }}"></span>{{ s.source }}</span></td>
+          <td class="right">{{ s.products }}</td>
+          <td class="right">{{ s.floor | compact_vnd }}</td>
+          <td class="right">{{ s.median | compact_vnd }}</td>
+          <td class="right">{{ s.sales_weighted_median | compact_vnd }}</td>
+          <td class="right">{{ s.sold | number }}</td>
+          <td class="range-cell">
+            <div class="range" role="img" aria-label="{{ s.source }}: Q1 {{ s.q1 | compact_vnd }}, trung vị {{ s.median | compact_vnd }}, Q3 {{ s.q3 | compact_vnd }}"
+                 title="Giá sàn {{ s.floor | compact_vnd }} · Q1 {{ s.q1 | compact_vnd }} · trung vị {{ s.median | compact_vnd }} · Q3 {{ s.q3 | compact_vnd }}">
+              <div class="range-track"></div>
+              <div class="range-iqr src-{{ s.source | lower }}" style="left: {{ s.pos.q1 }}%; width: {{ s.pos.q3 - s.pos.q1 }}%"></div>
+              <div class="range-floor" style="left: calc({{ s.pos.floor }}% - 1px)"></div>
+              <div class="range-median" style="left: calc({{ s.pos.median }}% - 1px)"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="band-legend" style="margin-top: 12px">
+    <span class="key"><span class="key-swatch muted"></span>Thanh màu: khoảng giá phổ biến Q1–Q3</span>
+    <span class="key"><span class="key-line"></span>Vạch đậm: trung vị</span>
+    <span class="key"><span class="key-line" style="background: var(--ink-2)"></span>Vạch nhạt: giá sàn</span>
+  </div>
+  <p class="note">Lượt bán là số cộng dồn do từng sàn công bố. Lazada và Shopee chỉ gồm các trang bạn đã lưu từ trình duyệt, nên số sản phẩm giữa các sàn không bằng nhau.</p>
+</section>
+{% endif %}
+
 {# ---- Auto-generated insights ---- #}
 <section class="section card">
   <div class="card-head"><h2>Nhận xét nhanh</h2><p>tự sinh từ dữ liệu của lần thu thập này</p></div>
@@ -113,6 +160,13 @@
     {% set n.i = n.i + 1 %}
     <li><span class="i-no">{{ '%02d' % n.i }}</span>
       <span>Một sản phẩm trong <strong>{{ scope }}</strong> thường có giá từ <strong>{{ b.q1 | vnd }}</strong> đến <strong>{{ b.q3 | vnd }}</strong>, trung vị {{ b.median | vnd }}.</span></li>
+
+    {% if data.sources | length > 1 %}
+    {% set by_median = data.sources | sort(attribute="median") %}{% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Giá trung vị thấp nhất ở <strong>{{ by_median[0].source }}</strong> ({{ by_median[0].median | vnd }})
+      và cao nhất ở <strong>{{ by_median[-1].source }}</strong> ({{ by_median[-1].median | vnd }}).</span></li>
+    {% endif %}
 
     {% set s = data.best_segment %}
     {% if s and s.gap >= 5 %}{% set n.i = n.i + 1 %}
@@ -285,12 +339,6 @@
   </div>
 </section>
 
-{% if data.sources | length > 1 %}
-<section class="section card">
-  <div class="card-head"><h2>So sánh giữa các sàn</h2></div>
-  {{ group_table(data.sources, "Sàn") }}
-</section>
-{% endif %}
 
 {# ---- Unusual prices ---- #}
 {% if data.unusual %}

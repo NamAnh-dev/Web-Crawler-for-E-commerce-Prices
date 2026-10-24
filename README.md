@@ -1,6 +1,6 @@
 # EcomCheck — what is a fair price on a Vietnamese marketplace?
 
-EcomCheck is an end-to-end data project. For any product keyword it **collects** the listings from Tiki's public search API, **cleans** them, **analyses** the prices — a reference *floor price*, the common price range, unusual prices, which price segment actually sells, and a transparent *deal score* — and **presents** the results in a Flask web app, a CSV export and two Jupyter notebooks.
+EcomCheck is an end-to-end data project. For any product keyword it **collects** the listings from Tiki's public search API (and Lazada/Shopee results you save from your own browser), **cleans** them, **analyses** the prices — a reference *floor price*, the common price range, unusual prices, which price segment actually sells, a transparent *deal score*, a comparison between marketplaces and the price history built by a daily collection — and **presents** the results in a Flask web app, a CSV export and two Jupyter notebooks.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -13,31 +13,42 @@ EcomCheck is an end-to-end data project. For any product keyword it **collects**
 | Skill | Where to look |
 |---|---|
 | **Data collection** from a JSON API: pagination, timeouts, pauses between requests, back-off when rate limited, robots.txt check | [`crawler/tiki.py`](crawler/tiki.py), [`notebooks/01_data_collection.ipynb`](notebooks/01_data_collection.ipynb) |
+| **Reading network traffic**: extracting Lazada/Shopee search results from a browser HAR export, without bypassing their anti-bot protection | [`crawler/browser_import.py`](crawler/browser_import.py) |
+| **Automation**: daily batch collection with logging, scheduled with the Windows Task Scheduler | [`collect.py`](collect.py), [`schedule_daily.ps1`](schedule_daily.ps1) |
 | **Data cleaning & validation**: text normalisation for Vietnamese, parsing "1.2K sold", relevance filtering, data-quality checks | [`analysis/cleaning.py`](analysis/cleaning.py), [`tests/`](tests) |
-| **SQL & data modelling**: schema with proper numeric types, parameterised queries, filtering/sorting/pagination in SQL | [`database/schema.sql`](database/schema.sql), [`database/db.py`](database/db.py) |
-| **Statistics**: percentiles, IQR outliers on a log scale, weighted median, Bayesian average, Spearman correlation | [`analysis/pricing.py`](analysis/pricing.py), [`notebooks/02_price_analysis.ipynb`](notebooks/02_price_analysis.ipynb) |
-| **Communicating results**: dashboard, auto-generated insights, method page, CSV export | [`app.py`](app.py), [`web/`](web) |
+| **SQL & data modelling**: schema with proper numeric types, parameterised queries, filtering/sorting/pagination in SQL, snapshots over time | [`database/schema.sql`](database/schema.sql), [`database/db.py`](database/db.py) |
+| **Statistics**: percentiles, IQR outliers on a log scale, weighted median, Bayesian average, Spearman correlation, like-for-like price change | [`analysis/pricing.py`](analysis/pricing.py), [`analysis/history.py`](analysis/history.py), [`notebooks/02_price_analysis.ipynb`](notebooks/02_price_analysis.ipynb) |
+| **Machine learning for data integration**: TF-IDF + logistic regression trained on Tiki categories to label Lazada/Shopee products, with cross-validated accuracy | [`analysis/categories.py`](analysis/categories.py) |
+| **Communicating results**: dashboard, marketplace comparison, price history, auto-generated insights, method page, CSV export | [`app.py`](app.py), [`web/`](web) |
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    A["Tiki search API"] -->|"5 pages max · 1 s pause"| B["crawler/tiki.py<br/>Extract"]
+    A["Tiki search API"] -->|"web: 5 pages<br/>daily: 20 pages"| B["crawler/tiki.py<br/>Extract"]
+    L["Lazada / Shopee<br/>HAR saved in your browser"] --> I["crawler/browser_import.py<br/>Extract"]
     B --> C["analysis/cleaning.py<br/>Transform"]
-    C --> D["analysis/pricing.py<br/>Analyse"]
-    D --> E[("SQLite<br/>database/")]
+    I --> C
+    C --> K["analysis/categories.py<br/>predict category"]
+    K --> D["analysis/pricing.py<br/>Analyse"]
+    C --> D
+    D --> E[("SQLite<br/>one snapshot per search")]
     E --> F["Flask web app"]
+    E --> H["analysis/history.py<br/>price history"]
     E --> G["CSV export"]
-    C --> H["notebooks/"]
 ```
 
-1. **Collect** — up to 200 products per keyword from `tiki.vn/api/v2/products`, the endpoint the website itself calls. No login, allowed by robots.txt, one-second pause between pages, results re-used for 30 minutes.
-2. **Clean** — drop rows without a price or link, remove duplicates, fix discounts, treat a 0-star rating as *not rated*, and keep only products relevant to the keyword (name match **or** the main category of the exact matches).
+1. **Collect**
+   - **Tiki:** `tiki.vn/api/v2/products`, the endpoint the website itself calls. No login, allowed by robots.txt, a pause between pages, back-off when rate limited, results re-used for 30 minutes. A web search takes 5 pages (200 products); `collect.py` takes 20 pages per keyword for every keyword in `keywords.txt`, and can run every day.
+   - **Lazada and Shopee** block automated requests (anti-bot page, HTTP 403), so the app never calls them. You search on their websites as usual, export the network log (HAR) from DevTools and upload it; the app reads only the search responses inside it.
+2. **Clean** — drop rows without a price or link, remove duplicates, fix discounts, treat a 0-star rating as *not rated*, and keep only products relevant to the keyword (name match **or** the main category of the exact matches). Lazada and Shopee send no category name, so it is **predicted from the product name** with a classifier trained on the Tiki products of the same search; only predictions with a probability of at least 50 % are kept.
 3. **Analyse** — inside each category (so mouse pads never pull down the price of gaming mice):
    - **Unusual prices**: Tukey's IQR rule on `log10(price)`, because prices are right-skewed.
    - **Floor price** (*giá sàn tham khảo*): the 10th percentile of normal prices — 90 % of listings cost more.
    - **Common range**: Q1–Q3. **Sales-weighted median**: what buyers actually pay.
    - **Deal score (0–100)**: `0.3 × cheap rank + 0.4 × sold rank + 0.3 × rating rank`, with ratings adjusted by a Bayesian average so that 5★ from one review does not beat 4.8★ from a thousand.
+   - **Marketplace comparison**: floor price, common range and sales-weighted median per marketplace, on one price line.
+   - **Price history** (from the daily snapshots): the *like-for-like* price change of products present in every snapshot — the market median can move just because the product mix changed — units actually sold between two snapshots (`sold` is cumulative), and discounts whose "original price" was never charged during the period.
 4. **Present** — product list with filters and sorting done in SQL, a dashboard per category, auto-generated insights, CSV download, and a page that explains every formula.
 
 ## Key findings
@@ -79,9 +90,14 @@ pip install -r requirements.txt
 | Task | Command |
 |---|---|
 | Start the web app, then open http://127.0.0.1:5000 | `python app.py` |
-| Run the pipeline from the terminal | `python run_crawl.py "chuột gaming"` |
+| Collect one keyword from the terminal | `python run_crawl.py "chuột gaming" --pages 10` |
+| Collect every keyword of `keywords.txt` (20 pages each, ~2 min per keyword) | `python collect.py` |
+| Run `collect.py` every day at 08:00 (Windows) | `.\schedule_daily.ps1 -At 08:00` |
+| Stop the daily collection | `.\schedule_daily.ps1 -Remove` |
 | Run the tests (no internet needed) | `pytest` |
 | Open the notebooks | `jupyter notebook notebooks/` |
+
+**Adding Lazada and Shopee:** open a search result in the web app and click **Thêm Lazada, Shopee**. The page explains the steps: open DevTools (F12) → Network → tick *Preserve log*, search on lazada.vn or shopee.vn (logged in, as usual) and go through a few result pages, then *Export HAR (sanitized)* and upload the file. HAR files stay on your computer: they are ignored by git.
 
 Settings (pages per search, pause between requests, database path…) can be changed in a `.env` file — see [`.env.example`](.env.example).
 
@@ -89,20 +105,26 @@ Settings (pages per search, pause between requests, database path…) can be cha
 
 ```
 ├── app.py                  Flask routes and number formats
-├── run_crawl.py            ETL pipeline: crawl → clean → analyse → save (CLI + web)
+├── run_crawl.py            ETL pipeline: crawl → clean → analyse → save, and HAR import (CLI + web)
+├── collect.py              daily batch collection of the keywords in keywords.txt
+├── schedule_daily.ps1      registers collect.py in the Windows Task Scheduler
 ├── config.py               settings, read from .env
 ├── crawler/
 │   ├── tiki.py             Extract: Tiki public search API
-│   └── lazada.py           Extract: optional source (needs your own browser cookie)
+│   ├── browser_import.py   Extract: search responses inside a HAR / JSON / HTML file
+│   ├── lazada.py           parse Lazada search results
+│   └── shopee.py           parse Shopee search results
 ├── analysis/
 │   ├── cleaning.py         Transform: normalise, parse, filter relevant products
-│   └── pricing.py          Analyse: unusual prices, reference prices, deal score
+│   ├── categories.py       predict the category of Lazada/Shopee products
+│   ├── pricing.py          Analyse: unusual prices, reference prices, deal score, marketplaces
+│   └── history.py          Analyse: changes between snapshots
 ├── database/
 │   ├── schema.sql          tables: search_runs, products
 │   └── db.py               all SQL queries
 ├── web/
-│   ├── templates/          Jinja pages: home, products, dashboard, method
-│   └── static/             CSS (light + dark), Chart.js script
+│   ├── templates/          Jinja pages: home, products, dashboard, import, history, method
+│   └── static/             CSS (light + dark), Chart.js scripts
 ├── notebooks/
 │   ├── 01_data_collection.ipynb
 │   └── 02_price_analysis.ipynb
@@ -116,7 +138,7 @@ Settings (pages per search, pause between requests, database path…) can be cha
 | Table | Columns |
 |---|---|
 | `search_runs` | `id`, `keyword`, `product_count`, `notes`, `created_at` — one row per search, a snapshot of the market at that time |
-| `products` | `run_id`, `source`, `product_id`, `name`, `brand`, `seller`, `category`, `price`, `original_price`, `discount_pct`, `sold`, `rating`, `review_count`, `image_url`, `product_url`, `price_flag`, `deal_score` |
+| `products` | `run_id`, `source`, `product_id`, `name`, `brand`, `seller`, `category`, `category_predicted`, `price`, `original_price`, `discount_pct`, `sold`, `rating`, `review_count`, `image_url`, `product_url`, `price_flag`, `deal_score` |
 
 ## Version 2: what I fixed after reviewing version 1
 
@@ -141,13 +163,13 @@ Version 1 was built during my Data Collection / Data Analyst internship (2025) w
 - `sold` is the cumulative number shown by Tiki, not sales over a fixed period.
 - Only the first 200 results in Tiki's ranking are collected, which favours promoted and popular products.
 - The deal-score weights are a reasoned choice, not learned from purchase data.
-- Lazada is supported only with your own browser cookie, because it answers automated requests with an anti-bot page; Shopee is not included for the same reason.
+- Lazada and Shopee data only covers the pages you saved, so the marketplaces have different sample sizes; a predicted category can be wrong for vague product names (fine-grained categories such as *in-ear* vs *true wireless* earbuds are hard to tell apart from the name alone).
 
-**Next steps:** schedule daily searches to analyse price changes over time (the `search_runs` table already supports it), and compare the floor price with prices on other marketplaces.
+**Next steps:** after a few weeks of daily snapshots, a third notebook on price history (seasonality, real vs inflated discounts, sales velocity), and running the collection in the cloud (e.g. GitHub Actions) instead of a personal computer.
 
 ## Responsible data collection
 
-Only public product information is collected, through the endpoint the website itself uses, at a low request rate and for personal learning. No personal data, no login and no attempt to get around anti-bot protections.
+Only public product information is collected, through the endpoint the website itself uses, at a low request rate and for personal learning. No login and no attempt to get around anti-bot protections: Lazada and Shopee data comes only from pages you viewed yourself in your browser, and those files are never committed.
 
 ## Credits
 

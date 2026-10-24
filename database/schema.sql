@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS products (
     brand           TEXT,
     seller          TEXT,
     category        TEXT    NOT NULL,        -- from the source, e.g. "Chuột Chơi Game"
+    category_predicted INTEGER NOT NULL DEFAULT 0,  -- 1 = guessed from the name (Lazada, Shopee)
     price           INTEGER NOT NULL,        -- VND
     original_price  INTEGER NOT NULL,        -- VND, equals price when there is no discount
     discount_pct    INTEGER NOT NULL DEFAULT 0,
