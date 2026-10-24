@@ -1,0 +1,20 @@
+{# Shared header of the results and dashboard pages. Needs: run, active ("products" | "dashboard") #}
+<div class="run-head">
+  <div>
+    <p class="crumbs"><a href="{{ url_for('home') }}">Tìm kiếm</a> / Kết quả #{{ run.id }}</p>
+    <h1>{{ run.keyword }}</h1>
+    <p class="run-meta">
+      {{ run.product_count | number }} sản phẩm · thu thập lúc {{ run.created_at | datetime_vn }}
+    </p>
+    {% if run.notes %}<p class="run-meta small">Lưu ý: {{ run.notes }}</p>{% endif %}
+  </div>
+  <a class="btn" href="{{ url_for('export_csv', run_id=run.id) }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>
+    Tải CSV
+  </a>
+</div>
+
+<nav class="tabs" aria-label="Chế độ xem">
+  <a href="{{ url_for('products', run_id=run.id) }}" class="{{ 'active' if active == 'products' }}">Sản phẩm</a>
+  <a href="{{ url_for('dashboard', run_id=run.id) }}" class="{{ 'active' if active == 'dashboard' }}">Phân tích giá</a>
+</nav>

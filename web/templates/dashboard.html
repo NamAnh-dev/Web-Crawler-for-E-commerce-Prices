@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}{{ run.keyword }} · Phân tích giá · EcomCheck{% endblock %}
+
+{% block content %}
+{% set active = "dashboard" %}
+{% set segment_names = {"budget": "Giá rẻ", "mid": "Tầm trung", "premium": "Cao cấp"} %}
+{% set k = data.kpis %}
+{% set b = data.band %}
+{% set scope = "tất cả danh mục" if category == "all" else category %}
+{% include "_run_header.html" %}
+
+{# ---- Scope: analyse one category at a time (tiny categories are folded into "Tất cả") ---- #}
+{% set shown = categories | selectattr("products", ">=", 3) | list %}
+{% set hidden = categories | length - shown | length %}
+<div class="scope" role="group" aria-label="Danh mục phân tích">
+  <span class="scope-label">Danh mục phân tích</span>
+  {% for c in categories if c.products >= 3 or c.category == category %}
+    <a class="chip {{ 'active' if c.category == category }}" href="{{ url_for('dashboard', run_id=run.id, category=c.category) }}">
+      {{ c.category }} <span class="count">{{ c.products }}</span>
+    </a>
+  {% endfor %}
+  {% if categories | length > 1 %}
+    <a class="chip {{ 'active' if category == 'all' }}" href="{{ url_for('dashboard', run_id=run.id, category='all') }}">
+      Tất cả <span class="count">{{ run.product_count }}</span>
+    </a>
+  {% endif %}
+  {% if hidden %}<span class="small muted">+ {{ hidden }} danh mục nhỏ (dưới 3 sản phẩm) nằm trong "Tất cả"</span>{% endif %}
+</div>
+
+{# ---- Headline: floor price + price band ---- #}
+<section class="headline">
+  <div class="card">
+    <p class="hero-figure-label">Giá sàn tham khảo</p>
+    <p class="hero-figure">{{ b.floor | vnd }}</p>
+    <p class="hero-note">
+      90% sản phẩm có giá bình thường trong <strong>{{ scope }}</strong> được bán từ mức này trở lên.
+      Một tin rao rẻ hơn nhiều so với mức này nên được kiểm tra kỹ.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Dải giá thị trường</h2>
+      <p>thang logarit, từ rẻ nhất đến phân vị 90</p>
+    </div>
+    {% set pos = data.band_pos %}
+    <div class="band" role="img" aria-label="Giá sàn {{ b.floor | vnd }}, khoảng phổ biến {{ b.q1 | vnd }} đến {{ b.q3 | vnd }}, trung vị {{ b.median | vnd }}">
+      <div class="band-track"></div>
+      <div class="band-iqr" style="left: {{ pos.q1 }}%; width: {{ pos.q3 - pos.q1 }}%"></div>
+      <div class="band-mark floor" style="left: calc({{ pos.floor }}% - 1px)"></div>
+      <div class="band-mark" style="left: calc({{ pos.median }}% - 1px)"></div>
+      <div class="band-label above {{ 'edge-left' if pos.floor < 12 }}" style="left: {{ pos.floor }}%">Giá sàn<strong>{{ b.floor | compact_vnd }}</strong></div>
+      <div class="band-label above {{ 'edge-right' if pos.median > 88 }}" style="left: {{ pos.median }}%">Trung vị<strong>{{ b.median | compact_vnd }}</strong></div>
+      <div class="band-label below {{ 'edge-left' if pos.q1 < 12 }}" style="left: {{ pos.q1 }}%"><strong>{{ b.q1 | compact_vnd }}</strong>Q1</div>
+      <div class="band-label below {{ 'edge-right' if pos.q3 > 88 }}" style="left: {{ pos.q3 }}%"><strong>{{ b.q3 | compact_vnd }}</strong>Q3</div>
+    </div>
+    <div class="band-legend">
+      <span class="key"><span class="key-swatch"></span>Khoảng giá phổ biến (50% sản phẩm ở giữa)</span>
+      <span class="key"><span class="key-line"></span>Giá sàn và giá trung vị</span>
+    </div>
+  </div>
+</section>
+
+{# ---- KPI tiles ---- #}
+<section class="kpis" aria-label="Chỉ số chính">
+  <div class="kpi">
+    <p class="kpi-label">Sản phẩm phân tích</p>
+    <p class="kpi-value">{{ k.products | number }}</p>
+    <p class="kpi-note">{{ k.sellers }} người bán · {{ k.brands }} thương hiệu</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Giá trung vị</p>
+    <p class="kpi-value">{{ b.median | vnd }}</p>
+    <p class="kpi-note">phổ biến {{ b.q1 | compact_vnd }} – {{ b.q3 | compact_vnd }}</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Giá theo lượt bán</p>
+    <p class="kpi-value">{{ b.sales_weighted_median | vnd }}</p>
+    <p class="kpi-note">trung vị tính theo số lượng đã bán</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Tổng lượt bán</p>
+    <p class="kpi-value">{{ k.total_sold | number }}</p>
+    <p class="kpi-note">cộng dồn theo số liệu của sàn</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Đang giảm giá</p>
+    <p class="kpi-value">{{ k.discount_share | number(1) }}%</p>
+    <p class="kpi-note">{% if k.avg_discount %}mức giảm trung bình {{ k.avg_discount | number }}%{% else %}không có sản phẩm giảm giá{% endif %}</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Có đánh giá</p>
+    <p class="kpi-value">{{ k.rated_share | number(1) }}%</p>
+    <p class="kpi-note">điểm trung bình {{ k.avg_rating | number(1) }} / 5</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Giá bất thường</p>
+    <p class="kpi-value">{{ k.unusual }}</p>
+    <p class="kpi-note">không tính vào thống kê giá</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Ngưỡng giá hợp lệ</p>
+    <p class="kpi-value">{{ data.fences.low | compact_vnd }} – {{ data.fences.high | compact_vnd }}</p>
+    <p class="kpi-note">quy tắc IQR trên thang log</p>
+  </div>
+</section>
+
+{# ---- Auto-generated insights ---- #}
+<section class="section card">
+  <div class="card-head"><h2>Nhận xét nhanh</h2><p>tự sinh từ dữ liệu của lần thu thập này</p></div>
+  <ol class="insights">
+    {% set n = namespace(i=0) %}
+    {% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Một sản phẩm trong <strong>{{ scope }}</strong> thường có giá từ <strong>{{ b.q1 | vnd }}</strong> đến <strong>{{ b.q3 | vnd }}</strong>, trung vị {{ b.median | vnd }}.</span></li>
+
+    {% set s = data.best_segment %}
+    {% if s and s.gap >= 5 %}{% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng tới <strong>{{ s.sales_share | number }}% lượt bán</strong>.</span></li>
+    {% endif %}
+
+    {% set s = data.worst_segment %}
+    {% if s and s.gap <= -5 %}{% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Ngược lại, phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng chỉ <strong>{{ s.sales_share | number }}% lượt bán</strong>{% if s.segment == "budget" %}: rẻ nhất không có nghĩa là bán chạy nhất{% endif %}.</span></li>
+    {% endif %}
+
+    {% if b.sales_weighted_median %}{% set n.i = n.i + 1 %}
+    {% set ratio = b.sales_weighted_median / b.median %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Tính theo lượt bán, giá người mua thực trả ở mức khoảng <strong>{{ b.sales_weighted_median | vnd }}</strong>,
+      {% if ratio > 1.1 %}cao hơn {{ ((ratio - 1) * 100) | number }}% so với giá trung vị niêm yết: sản phẩm bán chạy nằm ở mức giá cao hơn mặt bằng chung.
+      {% elif ratio < 0.9 %}thấp hơn {{ ((1 - ratio) * 100) | number }}% so với giá trung vị niêm yết: sản phẩm bán chạy nằm ở mức giá thấp hơn mặt bằng chung.
+      {% else %}gần với giá trung vị niêm yết.{% endif %}</span></li>
+    {% endif %}
+
+    {% if data.best_sellers and k.total_sold %}{% set top = data.best_sellers[0] %}{% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>Sản phẩm bán chạy nhất chiếm <strong>{{ (100 * top.sold / k.total_sold) | number }}%</strong> tổng lượt bán ({{ top.name | truncate(60) }}).</span></li>
+    {% endif %}
+
+    {% set n.i = n.i + 1 %}
+    <li><span class="i-no">{{ '%02d' % n.i }}</span>
+      <span>{{ k.discount_share | number }}% sản phẩm đang giảm giá{% if k.avg_discount %}, mức giảm trung bình {{ k.avg_discount | number }}%{% endif %}; chỉ {{ k.rated_share | number }}% sản phẩm đã có đánh giá.</span></li>
+  </ol>
+</section>
+
+{# ---- Price distribution (Chart.js) ---- #}
+<section class="section card">
+  <div class="card-head">
+    <h2>Phân bố giá</h2>
+    <p>số sản phẩm theo khoảng giá, đã bỏ giá bất thường</p>
+  </div>
+  <div class="band-legend" style="margin-bottom: 12px">
+    <span class="key"><span class="key-swatch"></span>Trong khoảng giá phổ biến (Q1–Q3)</span>
+    <span class="key"><span class="key-swatch muted"></span>Ngoài khoảng phổ biến</span>
+  </div>
+  <div class="chart-box"><canvas id="price-chart" role="img" aria-label="Biểu đồ phân bố giá"></canvas></div>
+  <details class="small" style="margin-top: 12px">
+    <summary class="muted">Xem dạng bảng</summary>
+    <table class="table" style="margin-top: 8px">
+      <thead><tr><th>Khoảng giá</th><th class="right">Số sản phẩm</th></tr></thead>
+      <tbody>
+        {% set e = data.histogram.edges %}
+        {% for count in data.histogram.counts %}
+          <tr><td>{{ e[loop.index0] | compact_vnd }} – {{ e[loop.index] | compact_vnd }}</td><td class="right">{{ count }}</td></tr>
+        {% endfor %}
+        {% if data.histogram.tail %}<tr><td>Từ {{ e[-1] | compact_vnd }}</td><td class="right">{{ data.histogram.tail }}</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </details>
+</section>
+
+{# ---- Price segments: share of listings vs share of units sold ---- #}
+{% if data.segments %}
+<section class="section card">
+  <div class="card-head">
+    <h2>Phân khúc giá: tin đăng so với lượt bán</h2>
+    <p>chia theo Q1 và Q3 của giá</p>
+  </div>
+  {% for row_label, field in [("Tin đăng", "listing_share"), ("Lượt bán", "sales_share")] %}
+  <div class="share-row">
+    <span class="share-row-label">{{ row_label }}</span>
+    <div class="share-bar">
+      {% for s in data.segments %}
+        {% set value = s[field] %}
+        {% if value > 0 %}
+        <div class="share-seg tier-{{ loop.index }}" style="flex: {{ value }} 1 0"
+             title="{{ segment_names[s.segment] }}: {{ value | number(1) }}%">{% if value >= 9 %}{{ value | number }}%{% endif %}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="band-legend" style="margin: 4px 0 16px 104px">
+    {% for s in data.segments %}
+      <span class="key"><span class="key-swatch tier-{{ loop.index }}"></span>{{ segment_names[s.segment] }}</span>
+    {% endfor %}
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Phân khúc</th><th>Khoảng giá</th><th class="right">Sản phẩm</th><th class="right">Lượt bán</th><th class="right">% tin đăng</th><th class="right">% lượt bán</th></tr></thead>
+      <tbody>
+        {% for s in data.segments %}
+        <tr>
+          <td>{{ segment_names[s.segment] }}</td>
+          <td class="num">{{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}</td>
+          <td class="right">{{ s.listings }}</td>
+          <td class="right">{{ s.sold | number }}</td>
+          <td class="right">{{ s.listing_share | number(1) }}%</td>
+          <td class="right">{{ s.sales_share | number(1) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{# ---- Deals and best sellers ---- #}
+{% macro mini_item(p) %}
+  <li class="mini-item">
+    <img class="thumb" src="{{ p.image_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div>
+      <a class="product-name" href="{{ p.product_url }}" target="_blank" rel="noopener">{{ p.name }}</a>
+      <div class="product-meta">{{ p.brand or p.seller or "" }}</div>
+    </div>
+    <div class="mini-value">{{ caller() }}</div>
+  </li>
+{% endmacro %}
+
+<section class="section grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Đáng mua nhất</h2><p>điểm cao nhất: giá tốt, bán chạy, đánh giá cao</p></div>
+    <ul class="mini-list">
+      {% for p in data.top_deals %}
+        {% call mini_item(p) %}{{ p.price | vnd }}<br><span class="muted">{{ p.deal_score | number(1) }} điểm</span>{% endcall %}
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Bán chạy nhất</h2><p>theo số lượng đã bán trên sàn</p></div>
+    <ul class="mini-list">
+      {% for p in data.best_sellers %}
+        {% call mini_item(p) %}{{ p.price | vnd }}<br><span class="muted">{{ p.sold | number }} đã bán</span>{% endcall %}
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{# ---- Brands and sellers ---- #}
+{% macro group_table(rows, column_label) %}
+  {% set max_sold = (rows | map(attribute='sold') | max) or 1 %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>{{ column_label }}</th><th class="right">Sản phẩm</th><th class="right">Giá trung vị</th><th class="right">Lượt bán</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td class="right">{{ r.products }}</td>
+          <td class="right">{{ r.median_price | compact_vnd }}</td>
+          <td class="right">
+            <div class="cell-bar">
+              <span>{{ r.sold | number }}</span>
+              <span class="cell-bar-track" aria-hidden="true"><span class="cell-bar-fill" style="display:block; width: {{ 100 * r.sold / max_sold }}%"></span></span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endmacro %}
+
+<section class="section grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Thương hiệu</h2><p>top theo lượt bán, bỏ hàng không thương hiệu</p></div>
+    {{ group_table(data.brands, "Thương hiệu") }}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Người bán</h2><p>top theo lượt bán</p></div>
+    {{ group_table(data.sellers, "Người bán") }}
+  </div>
+</section>
+
+{% if data.sources | length > 1 %}
+<section class="section card">
+  <div class="card-head"><h2>So sánh giữa các sàn</h2></div>
+  {{ group_table(data.sources, "Sàn") }}
+</section>
+{% endif %}
+
+{# ---- Unusual prices ---- #}
+{% if data.unusual %}
+<section class="section card">
+  <div class="card-head">
+    <h2>Giá bất thường</h2>
+    <p>ngoài ngưỡng {{ data.fences.low | compact_vnd }} – {{ data.fences.high | compact_vnd }}; thường là phụ kiện, hàng khác loại hoặc tin rao sai</p>
+  </div>
+  <ul class="mini-list">
+    {% for p in data.unusual %}
+      {% call mini_item(p) %}{{ p.price | vnd }}<br><span class="muted">{{ 'thấp bất thường' if p.price_flag == 'low' else 'cao bất thường' }}</span>{% endcall %}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<p class="section small muted">Cách tính các chỉ số được giải thích ở trang <a href="{{ url_for('about') }}">Phương pháp</a>.</p>
+
+<script type="application/json" id="chart-data">{{ {"histogram": data.histogram, "band": data.band} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

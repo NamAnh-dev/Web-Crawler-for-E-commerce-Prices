@@ -1,26 +1,28 @@
-# Python / env
+# Python / virtual env
 venv/
-.env
+env/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+.pytest_cache/
 
-# VSCode
+# Secrets and local settings (copy .env.example to .env)
+.env
+PassShopee.txt
+Ngrok.txt
+
+# Local database (re-created automatically; sample data lives in data/sample/)
+data/*.db
+data/*.db-journal
+
+# Editors / OS
+.claude/
 .vscode/
-
-# Database (nếu DB.sql chứa dữ liệu nhạy cảm, cân nhắc)
-# Nếu chỉ cấu trúc DB thì OK. Nếu chứa credentials -> không push
-# DB.sql
+.idea/
+.DS_Store
+Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
 
-# macOS
-.DS_Store
-
 # Logs
 *.log
-
-# virtualenv
-env/

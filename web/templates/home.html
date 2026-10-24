@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}EcomCheck · Giá bao nhiêu là hợp lý?{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Phân tích giá sàn thương mại điện tử</p>
+  <h1>Giá bao nhiêu là hợp lý?</h1>
+  <p class="lead">
+    Nhập tên một sản phẩm. EcomCheck thu thập các sản phẩm đang bán trên {{ sources | join(' và ') }},
+    làm sạch dữ liệu rồi tính <strong>giá sàn tham khảo</strong>, khoảng giá phổ biến
+    và những lựa chọn đáng mua nhất.
+  </p>
+
+  <form class="search-box" method="post" action="{{ url_for('search') }}" id="search-form">
+    <label for="keyword" class="visually-hidden">Tên sản phẩm</label>
+    <input class="input" id="keyword" name="keyword" type="search" minlength="2" maxlength="80"
+           placeholder="Ví dụ: chuột gaming" autocomplete="off" required autofocus>
+    <button class="btn btn-primary" type="submit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span>Phân tích giá</span>
+    </button>
+  </form>
+  <p class="search-status" id="search-status" aria-live="polite"></p>
+
+  <div class="examples">
+    <span>Thử nhanh:</span>
+    {% for example in ["chuột gaming", "tai nghe bluetooth", "bàn phím cơ", "nồi chiên không dầu", "sạc dự phòng"] %}
+      <button class="chip" type="button" data-example="{{ example }}">{{ example }}</button>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="steps" aria-label="Cách hoạt động">
+  <div class="step">
+    <span class="step-no">01</span>
+    <h3>Thu thập</h3>
+    <p>Gọi API tìm kiếm công khai, tối đa 5 trang (200 sản phẩm), nghỉ 1 giây giữa các lần gọi.</p>
+  </div>
+  <div class="step">
+    <span class="step-no">02</span>
+    <h3>Làm sạch</h3>
+    <p>Bỏ trùng lặp, chuẩn hóa giá và lượt bán, loại sản phẩm không liên quan đến từ khóa.</p>
+  </div>
+  <div class="step">
+    <span class="step-no">03</span>
+    <h3>Phân tích</h3>
+    <p>Phát hiện giá bất thường (IQR), tính giá sàn tham khảo và điểm "đáng mua" cho từng sản phẩm.</p>
+  </div>
+  <div class="step">
+    <span class="step-no">04</span>
+    <h3>Trình bày</h3>
+    <p>Lọc, sắp xếp, xem dashboard theo danh mục và tải dữ liệu về dạng CSV.</p>
+  </div>
+</section>
+
+{% if runs %}
+<section class="section card">
+  <div class="card-head">
+    <h2>Tìm kiếm gần đây</h2>
+    <p>Mỗi lần tìm kiếm là một ảnh chụp thị trường tại thời điểm đó.</p>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Từ khóa</th>
+          <th>Thời điểm thu thập</th>
+          <th class="right">Sản phẩm</th>
+          <th class="right">Xem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+        <tr class="row-link">
+          <td><a href="{{ url_for('products', run_id=run.id) }}">{{ run.keyword }}</a></td>
+          <td class="muted num">{{ run.created_at | datetime_vn }}</td>
+          <td class="right">{{ run.product_count | number }}</td>
+          <td class="right">
+            <a href="{{ url_for('products', run_id=run.id) }}">Sản phẩm</a> ·
+            <a href="{{ url_for('dashboard', run_id=run.id) }}">Phân tích</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Crawling takes a few seconds: show progress and block double submits.
+  const form = document.getElementById("search-form");
+  const input = document.getElementById("keyword");
+
+  form.addEventListener("submit", () => {
+    const button = form.querySelector("button");
+    button.disabled = true;
+    button.querySelector("span").textContent = "Đang thu thập…";
+    document.getElementById("search-status").textContent =
+      "Đang lấy dữ liệu và phân tích, thường mất khoảng 5–10 giây.";
+  });
+
+  document.querySelectorAll("[data-example]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      input.value = chip.dataset.example;
+      form.requestSubmit();
+    });
+  });
+</script>
+{% endblock %}
