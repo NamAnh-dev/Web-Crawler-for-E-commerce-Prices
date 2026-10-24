@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ run.keyword }} · Sản phẩm · EcomCheck{% endblock %}
+
+{% block content %}
+{% set sort_labels = {
+  "deal": "Điểm đáng mua",
+  "price_asc": "Giá thấp đến cao",
+  "price_desc": "Giá cao đến thấp",
+  "sold": "Bán chạy nhất",
+  "rating": "Đánh giá cao nhất",
+  "discount": "Giảm giá nhiều nhất",
+} %}
+{% set active = "products" %}
+{% include "_run_header.html" %}
+
+<form class="filters" method="get" action="{{ url_for('products', run_id=run.id) }}">
+  <div class="field field-wide">
+    <label for="q">Tìm trong kết quả</label>
+    <input class="input" id="q" name="q" type="search" value="{{ filters.q }}" placeholder="Tên, ví dụ: logitech">
+  </div>
+  <div class="field field-wide">
+    <label for="category">Danh mục</label>
+    <select class="select" id="category" name="category">
+      <option value="">Tất cả danh mục</option>
+      {% for c in categories %}
+        <option value="{{ c.category }}" {{ 'selected' if filters.category == c.category }}>{{ c.category }} ({{ c.products }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field field-wide">
+    <label for="sort">Sắp xếp</label>
+    <select class="select" id="sort" name="sort">
+      {% for value, label in sort_labels.items() %}
+        <option value="{{ value }}" {{ 'selected' if filters.sort == value }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if sources | length > 1 %}
+  <div class="field">
+    <label for="source">Sàn</label>
+    <select class="select" id="source" name="source">
+      <option value="">Tất cả</option>
+      {% for s in sources %}<option value="{{ s }}" {{ 'selected' if filters.source == s }}>{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="field">
+    <label for="min_price">Giá từ (₫)</label>
+    <input class="input" id="min_price" name="min_price" type="number" min="0" step="1000" inputmode="numeric" value="{{ filters.min_price or '' }}">
+  </div>
+  <div class="field">
+    <label for="max_price">Giá đến (₫)</label>
+    <input class="input" id="max_price" name="max_price" type="number" min="0" step="1000" inputmode="numeric" value="{{ filters.max_price or '' }}">
+  </div>
+  <div class="field">
+    <label for="min_sold">Đã bán từ</label>
+    <input class="input" id="min_sold" name="min_sold" type="number" min="0" inputmode="numeric" value="{{ filters.min_sold or '' }}">
+  </div>
+  <div class="field">
+    <label for="min_rating">Đánh giá</label>
+    <select class="select" id="min_rating" name="min_rating">
+      <option value="">Tất cả</option>
+      <option value="4" {{ 'selected' if filters.min_rating == 4 }}>Từ 4 sao</option>
+      <option value="4.5" {{ 'selected' if filters.min_rating == 4.5 }}>Từ 4,5 sao</option>
+    </select>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">Lọc</button>
+    <a class="btn" href="{{ url_for('products', run_id=run.id) }}">Xóa lọc</a>
+  </div>
+</form>
+
+<div class="result-count">
+  <span>{{ total | number }} sản phẩm phù hợp{% if pages > 1 %} · trang {{ page }}/{{ pages }}{% endif %}</span>
+  <span>Sắp xếp theo: {{ sort_labels.get(filters.sort, sort_labels.deal) | lower }}</span>
+</div>
+
+<div class="products">
+  {% if products %}
+  <div class="product product-head" aria-hidden="true">
+    <span></span><span>Sản phẩm</span><span class="right">Giá</span><span class="right">Đã bán</span>
+    <span class="right">Đánh giá</span><span class="right">Điểm đáng mua</span>
+  </div>
+  {% for p in products %}
+  <article class="product">
+    <img class="thumb" src="{{ p.image_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div>
+      <a class="product-name" href="{{ p.product_url }}" target="_blank" rel="noopener">{{ p.name }}</a>
+      <div class="product-meta">
+        {% if p.brand %}<span class="meta">{{ p.brand }}</span>{% endif %}
+        {% if p.seller %}<span class="meta">{{ p.seller }}</span>{% endif %}
+        {% if not filters.category %}<span class="meta">{{ p.category }}</span>{% endif %}
+        {% if sources | length > 1 %}<span class="meta">{{ p.source }}</span>{% endif %}
+        {% if p.price_flag == "low" %}
+          <span class="badge" title="Rẻ bất thường so với sản phẩm cùng danh mục (quy tắc IQR)"><span class="dot"></span>Giá thấp bất thường</span>
+        {% elif p.price_flag == "high" %}
+          <span class="badge" title="Đắt bất thường so với sản phẩm cùng danh mục (quy tắc IQR)"><span class="dot"></span>Giá cao bất thường</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="right price-cell">
+      <div class="price">{{ p.price | vnd }}</div>
+      {% if p.discount_pct > 0 %}
+        <div><span class="price-old">{{ p.original_price | vnd }}</span> <span class="badge badge-discount">−{{ p.discount_pct }}%</span></div>
+      {% endif %}
+    </div>
+    <div class="right stat"><span class="stat-label">Đã bán</span>{{ p.sold | number }}</div>
+    <div class="right stat">
+      <span class="stat-label">Đánh giá</span>
+      {% if p.rating %}<span><span class="star" aria-hidden="true">★</span> {{ p.rating | number(1) }} <span class="muted small">({{ p.review_count | number }})</span></span>
+      {% else %}<span class="muted">Chưa có</span>{% endif %}
+    </div>
+    <div class="stat">
+      <span class="stat-label">Điểm</span>
+      {% if p.deal_score is not none %}
+        <div class="meter" title="Điểm đáng mua: {{ p.deal_score | number(1) }}/100">
+          <div class="meter-track"><div class="meter-fill" style="width: {{ p.deal_score }}%"></div></div>
+          <span class="meter-value">{{ p.deal_score | round | int }}</span>
+        </div>
+      {% else %}
+        <span class="muted small" title="Không chấm điểm sản phẩm có giá bất thường">–</span>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+  {% else %}
+    <p class="empty">Không có sản phẩm nào khớp bộ lọc. <a href="{{ url_for('products', run_id=run.id) }}">Xóa lọc</a></p>
+  {% endif %}
+</div>
+
+{% if pages > 1 %}
+{% set window = range([1, page - 2] | max, ([pages, page + 2] | min) + 1) %}
+<nav class="pagination" aria-label="Phân trang">
+  {% if page > 1 %}<a href="{{ url_with(page=page - 1) }}" aria-label="Trang trước">‹</a>{% endif %}
+  {% if window[0] > 1 %}
+    <a href="{{ url_with(page=1) }}">1</a>
+    {% if window[0] > 2 %}<span class="gap">…</span>{% endif %}
+  {% endif %}
+  {% for p in window %}
+    {% if p == page %}<span class="current" aria-current="page">{{ p }}</span>
+    {% else %}<a href="{{ url_with(page=p) }}">{{ p }}</a>{% endif %}
+  {% endfor %}
+  {% if window[-1] < pages %}
+    {% if window[-1] < pages - 1 %}<span class="gap">…</span>{% endif %}
+    <a href="{{ url_with(page=pages) }}">{{ pages }}</a>
+  {% endif %}
+  {% if page < pages %}<a href="{{ url_with(page=page + 1) }}" aria-label="Trang sau">›</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

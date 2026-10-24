@@ -1,8 +1,11 @@
-flask
-mysql-connector-python
-pandas
-matplotlib
-scikit-learn
-plotly
-requests
+# Web app + data pipeline
+flask>=3.0
+pandas>=2.1
+numpy>=1.26
+requests>=2.31
+python-dotenv>=1.0
 
+# Notebooks and tests
+matplotlib>=3.8
+jupyter>=1.0
+pytest>=8.0
