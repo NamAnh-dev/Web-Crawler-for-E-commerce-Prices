@@ -67,7 +67,7 @@ def parse_item(item):
     }
 
 
-def crawl(keyword):
+def crawl(keyword, max_pages=None):
     """Return a raw (not yet cleaned) DataFrame of Tiki products."""
-    items = fetch_pages(keyword)
+    items = fetch_pages(keyword, max_pages or config.MAX_PAGES)
     return pd.DataFrame([parse_item(item) for item in items])

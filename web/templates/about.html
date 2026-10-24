@@ -11,7 +11,7 @@
   </p>
 
   <div class="pipeline">
-    <div><strong>1. Thu thập</strong>crawler/tiki.py</div>
+    <div><strong>1. Thu thập</strong>crawler/tiki.py, browser_import.py</div>
     <div><strong>2. Làm sạch</strong>analysis/cleaning.py</div>
     <div><strong>3. Phân tích</strong>analysis/pricing.py</div>
     <div><strong>4. Lưu và trình bày</strong>SQLite · Flask</div>
@@ -23,7 +23,8 @@
     <li>Lấy tối đa 5 trang × 40 sản phẩm, <strong>nghỉ 1 giây giữa hai lần gọi</strong>, có timeout và dừng sớm khi hết trang.</li>
     <li>Khi sàn báo đang nhận quá nhiều request (trả về trang HTML thay vì dữ liệu), crawler chờ 15 rồi 30 giây trước khi thử lại, sau đó dừng hẳn.</li>
     <li>Kết quả tìm kiếm trong 30 phút gần nhất được dùng lại thay vì gọi API lần nữa.</li>
-    <li>Lazada là nguồn tùy chọn: Lazada trả về trang xác minh chống bot cho request tự động, nên nguồn này chỉ chạy khi người dùng tự cấu hình cookie trình duyệt của mình trong <code>.env</code>.</li>
+    <li><strong>Thu thập hằng ngày:</strong> <code>collect.py</code> lấy 20 trang cho mỗi từ khóa trong <code>keywords.txt</code>, nghỉ 3 giây giữa các trang và 60 giây giữa các từ khóa. Mỗi lần chạy là một ảnh chụp mới, dùng cho trang Lịch sử giá.</li>
+    <li><strong>Lazada và Shopee</strong> chặn chương trình tự động (trang xác minh chống bot, lỗi 403), nên EcomCheck không tự gọi hai sàn này và không tìm cách vượt qua. Người dùng tìm kiếm trên trình duyệt của mình, xuất nhật ký mạng (file HAR) rồi tải lên; ứng dụng chỉ đọc phần kết quả tìm kiếm trong file.</li>
   </ul>
 
   <h2>2. Làm sạch dữ liệu</h2>
@@ -35,6 +36,7 @@
     <li>Gộp các tên "OEM", "No Brand" thành không thương hiệu.</li>
     <li><strong>Lọc sản phẩm liên quan:</strong> giữ sản phẩm có đủ các từ của từ khóa trong tên (không phân biệt dấu),
       <em>hoặc</em> thuộc danh mục chính của nhóm sản phẩm đó. Nhờ vậy "Chuột chơi game Logitech" vẫn được giữ khi tìm "chuột gaming".</li>
+    <li><strong>Danh mục cho Lazada và Shopee:</strong> hai sàn này không gửi tên danh mục, nên danh mục được dự đoán từ tên sản phẩm bằng TF-IDF (n-gram ký tự) và hồi quy logistic, học từ các sản phẩm Tiki của cùng lần tìm kiếm. Chỉ giữ dự đoán có xác suất từ 50% trở lên; độ chính xác kiểm tra chéo trên Tiki được báo mỗi lần nhập.</li>
   </ol>
 
   <h2>3. Các chỉ số</h2>
@@ -56,8 +58,16 @@
 
   <p><strong>Phân khúc giá.</strong> Giá rẻ (≤ Q1), tầm trung (Q1–Q3), cao cấp (&gt; Q3). So sánh tỷ lệ tin đăng với tỷ lệ lượt bán cho biết phân khúc nào bán tốt hơn "phần" của nó.</p>
 
+  <p><strong>Lịch sử giá.</strong> Khi một từ khóa có nhiều lần thu thập:</p>
+  <ul>
+    <li><strong>Giá của cùng sản phẩm</strong>: thay đổi giá trung vị của những sản phẩm có mặt ở cả lần đầu và lần cuối. Trung vị toàn thị trường có thể đổi chỉ vì tập sản phẩm khác nhau, nên đây mới là thước đo biến động giá thật.</li>
+    <li><strong>Bán được trong giai đoạn</strong> = "đã bán" lần cuối − "đã bán" lần đầu, vì sàn công bố số cộng dồn.</li>
+    <li><strong>Giảm giá thật hay ảo</strong> (sau ít nhất 7 ngày): sản phẩm đang giảm giá từ một "giá gốc" chưa từng được bán trong suốt thời gian theo dõi.</li>
+  </ul>
+
   <h2>4. Hạn chế</h2>
   <ul>
+    <li>Dữ liệu Lazada và Shopee chỉ gồm các trang người dùng đã lưu, nên số sản phẩm giữa các sàn không bằng nhau; danh mục dự đoán có thể sai với tên sản phẩm mơ hồ.</li>
     <li>Mỗi lần tìm kiếm chỉ là một thời điểm; giá có thể đổi theo giờ và theo khuyến mãi, voucher không được tính.</li>
     <li>"Đã bán" là số cộng dồn do sàn công bố, không phải doanh số trong một khoảng thời gian cố định.</li>
     <li>Chỉ lấy 200 kết quả đầu tiên theo thứ tự xếp hạng của sàn, nên có thể thiên về sản phẩm được quảng bá.</li>

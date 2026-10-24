@@ -4,6 +4,7 @@ pandas>=2.1
 numpy>=1.26
 requests>=2.31
 python-dotenv>=1.0
+scikit-learn>=1.4     # category prediction for Lazada/Shopee products
 
 # Notebooks and tests
 matplotlib>=3.8

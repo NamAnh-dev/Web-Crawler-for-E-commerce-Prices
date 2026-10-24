@@ -11,14 +11,16 @@ from flask import Flask, Response, abort, flash, redirect, render_template, requ
 
 import config
 from analysis.cleaning import normalize_text
+from analysis.history import build_history, main_category
 from analysis.pricing import build_dashboard
 from database import db
-from run_crawl import available_sources, run_pipeline
+from run_crawl import import_files, run_pipeline
 
 PER_PAGE = 20
 
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 app.config["SECRET_KEY"] = config.SECRET_KEY
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # HAR files can be large
 db.init_db()
 
 
@@ -65,11 +67,23 @@ def url_with(**changes):
     return url_for(request.endpoint, **request.view_args, **args)
 
 
+def run_context(run):
+    """What the shared header of every run page needs."""
+    return {"run": run, "sources": db.run_sources(run["id"]), "snapshots": db.count_runs(run["keyword"])}
+
+
+def get_run_or_404(run_id):
+    run = db.get_run(run_id)
+    if run is None:
+        abort(404)
+    return run
+
+
 # --- Pages -----------------------------------------------------------------------
 
 @app.route("/")
 def home():
-    return render_template("home.html", runs=db.recent_runs(), sources=list(available_sources()))
+    return render_template("home.html", runs=db.recent_runs())
 
 
 @app.route("/search", methods=["POST"])
@@ -81,19 +95,16 @@ def search():
 
     # Re-use a fresh search for the same keyword instead of crawling again.
     recent = db.find_recent_run(keyword, config.CACHE_MINUTES)
-    run_id = recent["id"] if recent else run_pipeline(keyword)
+    try:
+        run_id = recent["id"] if recent else run_pipeline(keyword)
+    except Exception as error:  # network problem or rate limit
+        flash(f"Không lấy được dữ liệu từ Tiki: {error}")
+        return redirect(url_for("home"))
 
     if run_id is None:
         flash(f"Không tìm thấy sản phẩm phù hợp với “{keyword}”. Hãy thử từ khóa khác.")
         return redirect(url_for("home"))
     return redirect(url_for("products", run_id=run_id))
-
-
-def get_run_or_404(run_id):
-    run = db.get_run(run_id)
-    if run is None:
-        abort(404)
-    return run
 
 
 @app.route("/run/<int:run_id>")
@@ -116,14 +127,13 @@ def products(run_id):
 
     return render_template(
         "results.html",
-        run=run,
+        **run_context(run),
         products=rows,
         total=total,
         page=page,
         pages=max(math.ceil(total / PER_PAGE), 1),
         filters=filters,
         categories=categories,
-        sources=db.run_sources(run_id),
     )
 
 
@@ -141,8 +151,60 @@ def dashboard(run_id):
     if df.empty:
         abort(404)
 
-    return render_template("dashboard.html", run=run, data=build_dashboard(df),
+    return render_template("dashboard.html", **run_context(run), data=build_dashboard(df),
                            categories=categories, category=category)
+
+
+@app.route("/run/<int:run_id>/import", methods=["GET", "POST"])
+def import_data(run_id):
+    """Add Lazada/Shopee results that the user saved from their own browser."""
+    run = get_run_or_404(run_id)
+    if request.method == "GET":
+        return render_template("import.html", **run_context(run))
+
+    files = [(f.filename, f.read()) for f in request.files.getlist("files") if f.filename]
+    if not files:
+        flash("Hãy chọn ít nhất một file.")
+        return redirect(url_for("import_data", run_id=run_id))
+    try:
+        summary = import_files(run_id, files)
+    except ValueError:
+        flash("Không đọc được file. Hãy dùng file .har xuất từ DevTools, hoặc file .json/.html đã lưu.")
+        return redirect(url_for("import_data", run_id=run_id))
+
+    if summary["found"] == 0:
+        flash("Không có kết quả tìm kiếm Lazada hoặc Shopee nào trong file. "
+              "Hãy mở DevTools trước khi tìm kiếm rồi xuất lại file HAR.")
+        return redirect(url_for("import_data", run_id=run_id))
+
+    added = ", ".join(f"{source} {count}" for source, count in summary["per_source"].items())
+    flash(f"Đã đọc {summary['found']} sản phẩm, giữ {summary['kept']} sản phẩm liên quan ({added or 'không có'}).")
+    if summary["accuracy"] is not None:
+        flash(f"Danh mục được dự đoán từ tên sản phẩm (độ chính xác khi kiểm tra trên Tiki: "
+              f"{summary['accuracy'] * 100:.0f}%); {summary['unknown']} sản phẩm chưa phân loại được.")
+    other = [k for k in summary["keywords"] if normalize_text(k) != normalize_text(run["keyword"])]
+    if other:
+        flash(f"Lưu ý: file chứa kết quả của từ khóa khác ({', '.join(other)}); "
+              f"chỉ sản phẩm liên quan đến “{run['keyword']}” được giữ lại.")
+    return redirect(url_for("products", run_id=run_id))
+
+
+@app.route("/history")
+def history():
+    keyword = request.args.get("keyword", "")
+    data = db.load_history(keyword)
+    data = data[data["source"] == "Tiki"]
+    if data.empty:
+        abort(404)
+    category = request.args.get("category") or main_category(data)
+    if not (data["category"] == category).any():
+        abort(404)
+    latest_run = db.get_run(int(data["run_id"].max()))
+    categories = data[data["run_id"] == latest_run["id"]]["category"].value_counts()
+
+    return render_template("history.html", **run_context(latest_run), category=category,
+                           categories=categories[categories >= 3].index.tolist(),
+                           history=build_history(data, category))
 
 
 @app.route("/run/<int:run_id>/export.csv")
@@ -165,6 +227,12 @@ def about():
 @app.errorhandler(404)
 def not_found(error):
     return render_template("404.html"), 404
+
+
+@app.errorhandler(413)
+def file_too_large(error):
+    flash("File quá lớn (tối đa 300 MB). Khi xuất HAR, hãy lọc tab Network theo Fetch/XHR và Doc.")
+    return redirect(request.referrer or url_for("home"))
 
 
 if __name__ == "__main__":

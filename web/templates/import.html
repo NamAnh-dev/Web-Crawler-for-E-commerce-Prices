@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ run.keyword }} · Thêm Lazada, Shopee · EcomCheck{% endblock %}
+
+{% block content %}
+{% set active = "import" %}
+{% include "_run_header.html" %}
+
+<section class="section">
+  <h2>Thêm dữ liệu Lazada và Shopee</h2>
+  <p class="muted" style="margin-top: 6px; max-width: 760px">
+    Lazada và Shopee chặn chương trình tự động, nên EcomCheck không tự gọi hai sàn này.
+    Bạn tìm kiếm như bình thường trên trình duyệt của mình, lưu lại nhật ký mạng (file HAR),
+    rồi tải file lên đây. Kết quả được gộp vào lần tìm kiếm “{{ run.keyword }}” để so sánh với Tiki.
+  </p>
+
+  <div class="how-to">
+    <div class="card">
+      <div class="card-head"><h3><span class="source-tag"><span class="source-dot src-lazada"></span>Lazada</span></h3><p>40 sản phẩm mỗi trang</p></div>
+      <ol>
+        <li>Mở Chrome hoặc Edge, nhấn <kbd>F12</kbd>, chọn tab <strong>Network</strong> và bật <strong>Preserve log</strong>.</li>
+        <li>Vào lazada.vn, tìm “<strong>{{ run.keyword }}</strong>”.</li>
+        <li>Chuyển qua trang 2, 3, 4… như khi xem bình thường.</li>
+        <li>Bấm nút tải xuống trong tab Network (<strong>Export HAR</strong>), chọn bản <strong>sanitized</strong> và lưu file .har.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><span class="source-tag"><span class="source-dot src-shopee"></span>Shopee</span></h3><p>60 sản phẩm mỗi trang</p></div>
+      <ol>
+        <li>Đăng nhập shopee.vn như bình thường.</li>
+        <li>Nhấn <kbd>F12</kbd>, chọn tab <strong>Network</strong> và bật <strong>Preserve log</strong>.</li>
+        <li>Tìm “<strong>{{ run.keyword }}</strong>” rồi chuyển qua vài trang kết quả.</li>
+        <li>Bấm <strong>Export HAR</strong>, chọn bản <strong>sanitized</strong> và lưu file .har.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card section">
+    <h3>Tải file lên</h3>
+    <form method="post" enctype="multipart/form-data" class="upload" id="import-form">
+      <label for="files" class="visually-hidden">Chọn file</label>
+      <input id="files" type="file" name="files" accept=".har,.json,.html,.htm" multiple required>
+      <button class="btn btn-primary" type="submit"><span>Nhập dữ liệu</span></button>
+    </form>
+    <p class="note">
+      Nhận file .har (có thể chọn nhiều file cùng lúc), hoặc một phản hồi tìm kiếm đã lưu dạng .json, hoặc trang Lazada đã lưu dạng .html.
+      Ứng dụng chỉ đọc phần kết quả tìm kiếm trong file và không lưu file lại.
+      Bản <strong>sanitized</strong> không chứa cookie; dù vậy đừng đưa file .har lên GitHub.
+    </p>
+    <p class="note">
+      Hai sàn này không gửi tên danh mục, nên danh mục được <strong>dự đoán từ tên sản phẩm</strong> bằng một mô hình
+      học từ các sản phẩm Tiki của chính lần tìm kiếm này. Sản phẩm mô hình không chắc chắn sẽ để “Chưa phân loại”.
+    </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("import-form").addEventListener("submit", (event) => {
+    const button = event.target.querySelector("button");
+    button.disabled = true;
+    button.querySelector("span").textContent = "Đang đọc file…";
+  });
+</script>
+{% endblock %}

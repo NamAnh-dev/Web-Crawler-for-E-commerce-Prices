@@ -1,45 +1,29 @@
-"""Extract: collect products from Lazada's catalog endpoint (optional source).
+"""Read Lazada search results that you saved from your own browser.
 
-Lazada replies to automated requests with an anti-bot verification page, so
-this source is only used when LAZADA_COOKIE is set in `.env`. If Lazada still
-returns the verification page, the source is skipped with a clear message.
+Lazada answers automated requests with an anti-bot page, so this project never
+requests Lazada itself. You search on lazada.vn as usual, export the network
+log (HAR) and `crawler/browser_import.py` passes the search responses here.
 """
-import time
+import json
+import re
 
-import pandas as pd
-import requests
-
-import config
 from analysis.cleaning import parse_sold
 
-SEARCH_URL = "https://www.lazada.vn/catalog/"
 
+def items_from_response(text):
+    """Product list of one search response.
 
-def fetch_pages(keyword, max_pages=config.MAX_PAGES):
-    if not config.LAZADA_COOKIE:
-        raise RuntimeError("Lazada is not configured (LAZADA_COOKIE is empty).")
-
-    headers = {
-        "User-Agent": config.USER_AGENT,
-        "Referer": "https://www.lazada.vn/",
-        "Cookie": config.LAZADA_COOKIE,
-    }
-    items = []
-    for page in range(1, max_pages + 1):
-        params = {"ajax": "true", "page": page, "q": keyword}
-        response = requests.get(SEARCH_URL, params=params, headers=headers,
-                                timeout=config.REQUEST_TIMEOUT)
-        response.raise_for_status()
-        if "json" not in response.headers.get("Content-Type", ""):
-            raise RuntimeError("Lazada returned a verification page instead of data "
-                               "(the cookie in .env has probably expired).")
-
-        page_items = response.json().get("mods", {}).get("listItems", [])
-        if not page_items:
-            break
-        items.extend(page_items)
-        time.sleep(config.REQUEST_DELAY)
-    return items
+    Pages 2, 3... arrive as JSON (`?ajax=true`); the first page is HTML with
+    the same data inside `window.pageData = {...}`.
+    """
+    text = text.strip()
+    if not text.startswith("{"):
+        match = re.search(r"window\.pageData\s*=\s*(\{.*?\})\s*;?\s*</script>", text, re.S)
+        if not match:
+            return []
+        text = match.group(1)
+    data = json.loads(text)
+    return data.get("mods", {}).get("listItems") or []
 
 
 def to_number(value):
@@ -68,7 +52,7 @@ def parse_item(item):
         "name": item.get("name"),
         "brand": item.get("brandName"),
         "seller": item.get("sellerName"),
-        "category": None,  # not included in Lazada's search results
+        "category": None,  # only category ids are sent, see analysis/categories.py
         "price": to_number(item.get("price")),
         "original_price": to_number(item.get("originalPrice")),
         "sold": parse_sold(item.get("itemSoldCntShow")),  # "1.2K sold" -> 1200
@@ -77,8 +61,3 @@ def parse_item(item):
         "image_url": item.get("image"),
         "product_url": full_url(item.get("itemUrl")),
     }
-
-
-def crawl(keyword):
-    items = fetch_pages(keyword)
-    return pd.DataFrame([parse_item(item) for item in items])

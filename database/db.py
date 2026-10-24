@@ -33,6 +33,11 @@ def get_connection():
 def init_db():
     conn = get_connection()
     conn.executescript(SCHEMA_FILE.read_text(encoding="utf-8"))
+    # a database created by an older version of the app misses this column
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(products)")}
+    if "category_predicted" not in columns:
+        conn.execute("ALTER TABLE products ADD COLUMN category_predicted INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
     conn.close()
 
 
@@ -48,6 +53,19 @@ def save_run(keyword, products, notes=None):
         products.assign(run_id=run_id).to_sql("products", conn, if_exists="append", index=False)
         conn.commit()
         return run_id
+    finally:
+        conn.close()
+
+
+def replace_products(run_id, products, notes=None):
+    """Replace all products of a run (used after importing Lazada/Shopee data)."""
+    conn = get_connection()
+    try:
+        conn.execute("DELETE FROM products WHERE run_id = ?", (run_id,))
+        products.assign(run_id=run_id).to_sql("products", conn, if_exists="append", index=False)
+        conn.execute("UPDATE search_runs SET product_count = ?, notes = ? WHERE id = ?",
+                     (len(products), notes, run_id))
+        conn.commit()
     finally:
         conn.close()
 
@@ -97,8 +115,40 @@ def load_products(run_id):
         conn.close()
 
 
+def count_runs(keyword):
+    """How many snapshots exist for a keyword (accent-insensitive)."""
+    rows = fetch_all("SELECT COUNT(*) AS n FROM search_runs WHERE normalize(keyword) = ?",
+                     (normalize_text(keyword),))
+    return rows[0]["n"]
+
+
+def load_history(keyword):
+    """Products of every snapshot of a keyword, with the time of each snapshot."""
+    conn = get_connection()
+    try:
+        return pd.read_sql_query(
+            """
+            SELECT p.*, r.created_at
+            FROM products p
+            JOIN search_runs r ON r.id = p.run_id
+            WHERE normalize(r.keyword) = ?
+            ORDER BY r.id, p.id
+            """,
+            conn,
+            params=(normalize_text(keyword),),
+        )
+    finally:
+        conn.close()
+
+
 def run_sources(run_id):
-    rows = fetch_all("SELECT DISTINCT source FROM products WHERE run_id = ?", (run_id,))
+    rows = fetch_all(
+        """
+        SELECT DISTINCT source FROM products WHERE run_id = ?
+        ORDER BY source != 'Tiki', source
+        """,
+        (run_id,),
+    )
     return [row["source"] for row in rows]
 
 

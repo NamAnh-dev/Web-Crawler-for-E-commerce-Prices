@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}{{ run.keyword }} · Lịch sử giá · EcomCheck{% endblock %}
+
+{% macro delta(pct) %}
+  {% if pct <= -0.5 %}<span class="delta-down">↓ {{ (-pct) | number(1) }}%</span>
+  {% elif pct >= 0.5 %}<span class="delta-up">↑ {{ pct | number(1) }}%</span>
+  {% else %}<span class="muted">không đổi</span>{% endif %}
+{% endmacro %}
+
+{% macro change(before, after) %}{{ delta(100 * (after / before - 1) if before else 0) }}{% endmacro %}
+
+{% macro product_item(p) %}
+  <li class="mini-item">
+    <img class="thumb" src="{{ p.image_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div>
+      <a class="product-name" href="{{ p.product_url }}" target="_blank" rel="noopener">{{ p.name }}</a>
+      <div class="product-meta">{{ p.brand or p.seller or "" }}</div>
+    </div>
+    <div class="mini-value">{{ caller() }}</div>
+  </li>
+{% endmacro %}
+
+{% block content %}
+{% set active = "history" %}
+{% include "_run_header.html" %}
+{% set snaps = history.snapshots %}
+
+<div class="scope" role="group" aria-label="Danh mục">
+  <span class="scope-label">Danh mục</span>
+  {% for c in categories %}
+    <a class="chip {{ 'active' if c == category }}" href="{{ url_for('history', keyword=run.keyword, category=c) }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+{% if snaps | length < 2 %}
+<section class="section card empty-state">
+  <h2>Mới có {{ snaps | length }} lần thu thập cho “{{ run.keyword }}”</h2>
+  <p class="muted">Lịch sử giá cần ít nhất hai lần thu thập. Mỗi lần chạy lệnh dưới đây là một ảnh chụp mới của thị trường:</p>
+  <code class="code-line">python collect.py "{{ run.keyword }}"</code>
+  <p class="muted">Hoặc để máy tự thu thập mọi từ khóa trong keywords.txt mỗi ngày:</p>
+  <code class="code-line">.\schedule_daily.ps1 -At 08:00</code>
+  <p class="muted">Sau 7 ngày, trang này còn kiểm tra được các mức giảm giá có thật hay không.</p>
+</section>
+{% else %}
+{% set first, last = snaps[0], snaps[-1] %}
+
+<section class="kpis" aria-label="Tóm tắt" style="margin-top: 20px">
+  <div class="kpi">
+    <p class="kpi-label">Số lần thu thập</p>
+    <p class="kpi-value">{{ snaps | length }}</p>
+    <p class="kpi-note">{% if history.days %}trong {{ history.days }} ngày{% else %}trong cùng một ngày{% endif %}</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Giá của cùng sản phẩm</p>
+    <p class="kpi-value">{{ delta(history.changes.median_change_pct) }}</p>
+    <p class="kpi-note">thay đổi trung vị của {{ history.changes.matched }} sản phẩm có ở cả lần đầu và lần cuối</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Sản phẩm đổi giá</p>
+    <p class="kpi-value">{{ history.changes.changed_share | number }}%</p>
+    <p class="kpi-note">trong {{ history.changes.matched }} sản phẩm đó</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Giá trung vị toàn thị trường</p>
+    <p class="kpi-value">{{ last.median | compact_vnd }}</p>
+    <p class="kpi-note">lần đầu {{ first.median | compact_vnd }} · {{ change(first.median, last.median) }}</p>
+  </div>
+</section>
+
+<p class="note">
+  Giá trung vị toàn thị trường có thể thay đổi chỉ vì tập sản phẩm khác nhau giữa hai lần thu thập
+  (sản phẩm mới, sản phẩm ngừng bán, số trang thu thập khác nhau). Chỉ số <strong>giá của cùng sản phẩm</strong>
+  so sánh đúng những sản phẩm có mặt ở cả hai lần, nên phản ánh biến động giá thật.
+</p>
+
+<section class="section card">
+  <div class="card-head">
+    <h2>Giá tham khảo qua các lần thu thập</h2>
+    <p>chỉ dữ liệu Tiki, danh mục {{ category }}</p>
+  </div>
+  <div class="band-legend" style="margin-bottom: 12px">
+    <span class="key"><span class="key-line" style="background: var(--accent); height: 2px; width: 14px"></span>Giá trung vị</span>
+    <span class="key"><span class="key-swatch" style="opacity: .25"></span>Khoảng phổ biến Q1–Q3</span>
+    <span class="key"><span class="key-line" style="background: var(--ink-2); height: 2px; width: 14px"></span>Giá sàn</span>
+  </div>
+  <div class="chart-box"><canvas id="history-chart" role="img" aria-label="Biểu đồ giá theo thời gian"></canvas></div>
+  <details class="small" style="margin-top: 12px">
+    <summary class="muted">Xem dạng bảng</summary>
+    <div class="table-wrap">
+      <table class="table" style="margin-top: 8px">
+        <thead><tr><th>Thời điểm</th><th class="right">Sản phẩm</th><th class="right">Giá sàn</th><th class="right">Q1</th><th class="right">Trung vị</th><th class="right">Q3</th><th class="right">Theo lượt bán</th></tr></thead>
+        <tbody>
+          {% for s in snaps %}
+          <tr>
+            <td class="num">{{ s.created_at | datetime_vn }}</td><td class="right">{{ s.products }}</td>
+            <td class="right">{{ s.floor | compact_vnd }}</td><td class="right">{{ s.q1 | compact_vnd }}</td>
+            <td class="right">{{ s.median | compact_vnd }}</td><td class="right">{{ s.q3 | compact_vnd }}</td>
+            <td class="right">{{ s.sales_weighted_median | compact_vnd }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+
+<section class="section card">
+  <div class="card-head">
+    <h2>Bán được nhiều nhất trong giai đoạn</h2>
+    <p>"đã bán" là số cộng dồn, nên lần cuối trừ lần đầu = số bán được giữa hai lần thu thập</p>
+  </div>
+  {% if history.changes.top_sellers %}
+  <ul class="mini-list">
+    {% for p in history.changes.top_sellers %}
+      {% call product_item(p) %}+{{ p.sold_between | number }} đã bán<br><span class="muted">{{ p.price | vnd }}</span>{% endcall %}
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Chưa có sản phẩm nào tăng lượt bán giữa hai lần thu thập.</p>{% endif %}
+</section>
+
+<section class="section grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Giảm giá nhiều nhất</h2><p>so với lần thu thập đầu tiên</p></div>
+    {% if history.changes.price_drops %}
+    <ul class="mini-list">
+      {% for p in history.changes.price_drops %}
+        {% call product_item(p) %}{{ p.price | vnd }}<br>{{ change(p.price_before, p.price) }}{% endcall %}
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Không có sản phẩm nào giảm giá.</p>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Tăng giá nhiều nhất</h2><p>so với lần thu thập đầu tiên</p></div>
+    {% if history.changes.price_rises %}
+    <ul class="mini-list">
+      {% for p in history.changes.price_rises %}
+        {% call product_item(p) %}{{ p.price | vnd }}<br>{{ change(p.price_before, p.price) }}{% endcall %}
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Không có sản phẩm nào tăng giá.</p>{% endif %}
+  </div>
+</section>
+
+<section class="section card">
+  <div class="card-head">
+    <h2>Giảm giá thật hay ảo?</h2>
+    <p>sản phẩm đang "giảm giá" từ một mức giá gốc chưa từng được bán trong suốt thời gian theo dõi</p>
+  </div>
+  {% if history.unseen is none %}
+    <p class="muted">Cần ít nhất 7 ngày dữ liệu (hiện có {{ history.days }} ngày).</p>
+  {% elif history.unseen %}
+  <ul class="mini-list">
+    {% for p in history.unseen %}
+      {% call product_item(p) %}−{{ p.discount_pct }}% từ {{ p.original_price | compact_vnd }}<br><span class="muted">giá cao nhất từng thấy {{ p.highest_price_seen | compact_vnd }}</span>{% endcall %}
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Không phát hiện mức giảm giá đáng ngờ trong {{ history.days }} ngày theo dõi.</p>{% endif %}
+</section>
+
+<script type="application/json" id="history-data">{{ snaps | tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if history.snapshots | length >= 2 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+{% endif %}
+{% endblock %}

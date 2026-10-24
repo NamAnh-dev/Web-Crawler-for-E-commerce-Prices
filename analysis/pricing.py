@@ -117,16 +117,38 @@ def price_band(df):
 
 # --- 4. Summaries for the dashboard ----------------------------------------------
 
-def band_positions(band):
-    """Where each reference price sits (0-100 %) on the dashboard's price line.
+def log_position(value, start, end):
+    """Where `value` sits (0-100 %) between `start` and `end` on a log scale.
 
-    The line runs from the cheapest normal product to the 90th percentile on a
-    log scale, so the cheap end is not squeezed into a few pixels.
+    A log scale keeps the cheap end of a price line from being squeezed
+    into a few pixels.
     """
-    start, end = np.log10(band["min"]), np.log10(band["ceiling"])
-    span = (end - start) or 1
-    return {key: float(np.clip(100 * (np.log10(band[key]) - start) / span, 0, 100))
+    span = (np.log10(end) - np.log10(start)) or 1
+    return float(np.clip(100 * (np.log10(value) - np.log10(start)) / span, 0, 100))
+
+
+def band_positions(band):
+    """Positions of the reference prices on the dashboard's price line,
+    which runs from the cheapest normal product to the 90th percentile."""
+    return {key: log_position(band[key], band["min"], band["ceiling"])
             for key in ("floor", "q1", "median", "q3")}
+
+
+def source_comparison(df):
+    """Reference prices and sales per marketplace, drawn on one shared price line."""
+    rows = []
+    sources = sorted(df["source"].unique(), key=lambda s: (s != "Tiki", s))  # Tiki first
+    for source in sources:
+        group = df[df["source"] == source]
+        if not (group["price_flag"] == "normal").any():
+            continue  # no normal price: no reference prices to show
+        rows.append({"source": source, "products": len(group), "sold": int(group["sold"].sum()),
+                     "rated_share": 100 * group["rating"].notna().mean(), **price_band(group)})
+    start = min(row["floor"] for row in rows)
+    end = max(row["ceiling"] for row in rows)
+    for row in rows:
+        row["pos"] = {key: log_position(row[key], start, end) for key in ("floor", "q1", "median", "q3")}
+    return rows
 
 
 def nice_step(raw_step):
@@ -223,7 +245,7 @@ def build_dashboard(df):
         "worst_segment": worst_segment,
         "brands": records(group_summary(df, "brand")),
         "sellers": records(group_summary(df, "seller")),
-        "sources": records(group_summary(df, "source")),
+        "sources": source_comparison(df) if df["source"].nunique() > 1 else [],
         "top_deals": records(df.nlargest(5, "deal_score")),
         "best_sellers": records(df.nlargest(5, "sold")),
         "unusual": records(df[df["price_flag"] != "normal"].sort_values("price")),

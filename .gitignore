@@ -14,6 +14,11 @@ Ngrok.txt
 data/*.db
 data/*.db-journal
 
+# Files saved from your browser (may contain personal data) and collection logs
+*.har
+data/raw/
+logs/
+
 # Editors / OS
 .claude/
 .vscode/
