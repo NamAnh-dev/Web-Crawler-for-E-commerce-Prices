@@ -148,7 +148,6 @@ main.container { padding-top: 28px; }
 .search-box .input { height: 48px; font-size: 16px; padding: 0 16px; }
 .search-box .btn { height: 48px; padding: 0 22px; }
 @media (max-width: 520px) { .search-box { flex-direction: column; } }
-.search-status { margin-top: 12px; font-size: 13px; color: var(--ink-2); min-height: 20px; }
 .examples { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); }
 
 .chip {
@@ -376,7 +375,7 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 .delta-up { color: var(--critical); font-weight: 600; }
 
 /* ==========================================================================
-   Look & feel: dark hero areas, cards and small animations
+   Look & feel: dark hero areas and cards
    ========================================================================== */
 
 /* Any element with .on-dark re-defines the colour tokens, so every component
@@ -394,15 +393,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 }
 .on-dark .btn-primary, .on-dark .btn-primary:hover { background: #2a78d6; }
 
-/* Home: full-width hero with a faint data grid in the background */
-.hero-band {
-  background-color: #121211;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+/* Home: full-width dark hero */
+.hero-band { background-color: #121211; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .hero-grid { display: grid; gap: 40px; align-items: center; padding: 56px 16px 64px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); padding: 80px 24px 88px; } }
 .hero-copy h1 { font-size: 52px; line-height: 1.08; letter-spacing: -0.03em; }
@@ -415,10 +407,9 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 
 .preview {
   display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; padding: 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  border-radius: 16px; padding: 24px;
 }
-.preview:hover { text-decoration: none; transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.28); }
+.preview:hover { text-decoration: none; border-color: rgba(255, 255, 255, 0.28); }
 .preview-head { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--ink-2); margin-bottom: 18px; }
 .preview-keyword { color: var(--ink); font-weight: 600; }
 .preview-label { font-size: 13px; color: var(--ink-2); }
@@ -442,8 +433,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 .run-cards { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 720px) { .run-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1040px) { .run-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.run-card { display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.run-card:hover { text-decoration: none; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+.run-card { display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.run-card:hover { text-decoration: none; border-color: var(--accent); }
 .run-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .run-card-top h3 { font-size: 16px; }
 .run-card-label { margin-top: 14px; font-size: 12px; color: var(--ink-2); }
@@ -466,8 +457,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 .deal-cards { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 720px) { .deal-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1040px) { .deal-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-.deal-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.deal-card:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1); }
+.deal-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.deal-card:hover { text-decoration: none; border-color: var(--accent); }
 .deal-image { display: block; aspect-ratio: 1; border-radius: 8px; background: #fff; overflow: hidden; margin-bottom: 4px; }
 .deal-image img { width: 100%; height: 100%; object-fit: contain; }
 .deal-score { position: absolute; top: 18px; left: 18px; padding: 3px 8px; border-radius: 999px; background: #121211; color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -481,17 +472,4 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
   .hero-band { background-color: #161615; }
   .hero-panel { background: #1a1a19; }
   .deal-score { background: #3987e5; }
-}
-
-/* Gentle entrance animations (switched off when the user prefers less motion) */
-@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.hero-copy, .preview, main > section { animation: rise 0.5s ease both; }
-.preview { animation-delay: 0.1s; }
-main > section:nth-of-type(2) { animation-delay: 0.05s; }
-main > section:nth-of-type(3) { animation-delay: 0.1s; }
-main > section:nth-of-type(n+4) { animation-delay: 0.15s; }
-.band-iqr { transform-origin: left center; animation: grow 0.8s 0.2s ease-out both; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
