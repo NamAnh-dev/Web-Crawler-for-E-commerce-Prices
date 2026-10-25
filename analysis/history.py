@@ -23,12 +23,13 @@ def snapshot_table(history):
 
 def product_changes(history):
     """Each product present in both the first and the latest snapshot."""
-    first = history[history["run_id"] == history["run_id"].min()].set_index(KEY)
-    latest = history[history["run_id"] == history["run_id"].max()].set_index(KEY)
-    both = latest.join(first[["price", "sold"]], rsuffix="_before", how="inner")
+    first = history[history["run_id"] == history["run_id"].min()]
+    latest = history[history["run_id"] == history["run_id"].max()]
+    # inner merge on (source, product_id): only products found in both snapshots
+    both = latest.merge(first[KEY + ["price", "sold"]], on=KEY, suffixes=("", "_before"))
     both["price_change_pct"] = 100 * (both["price"] / both["price_before"] - 1)
     both["sold_between"] = (both["sold"] - both["sold_before"]).clip(lower=0)
-    return both.reset_index()
+    return both
 
 
 def build_history(history, category):
