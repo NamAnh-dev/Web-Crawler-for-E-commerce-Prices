@@ -66,7 +66,7 @@ def import_files(run_id, files):
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")  # show Vietnamese correctly in the Windows console
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)  # default is stderr
     parser = argparse.ArgumentParser(description="Collect one keyword from Tiki.")
     parser.add_argument("keyword", nargs="+")
     parser.add_argument("--pages", type=int, default=config.MAX_PAGES, help="pages of 40 products")
