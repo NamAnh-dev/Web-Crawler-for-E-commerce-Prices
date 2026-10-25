@@ -165,15 +165,31 @@ Version 1 was built during my Data Collection / Data Analyst internship (2025) w
 | Product names inserted into JavaScript with `JSON.parse('...')`, which breaks on an apostrophe. | Data passed as `<script type="application/json">`. |
 | No timeout, no pause between requests. | Timeout, 1 s pause, back-off when rate limited, 30-minute cache. |
 
+### Second review (2026): problems found in version 2 itself
+
+Before putting the project in my CV I reviewed version 2 again, with the help of Claude Code, and fixed what that review found. Each code fix has a test.
+
+| Problem | Fix |
+|---|---|
+| `raise_for_status()` ran before the rate-limit check, so an HTTP 429 stopped the crawl instead of backing off. | 429/503 are checked first: wait (`Retry-After` if given) and retry. Tested with `unittest.mock`. |
+| Keyword matching used substrings: "tai" (of "tai nghe") matched "detail". | Whole words only. |
+| The Bayesian-average rating pulled every product toward the average of *all* categories, while every other part of the deal score is computed per category. | Average of the product's own category (`groupby` + `transform`). |
+| The marketplace comparison crashed (`min()` of an empty list) when no marketplace had a normal price. | Returns an empty comparison. |
+| A link past the last page of results (`?page=99`) gave a server error. | Redirects to the last page. |
+| Re-running notebook 01 overwrote the sample, so the numbers in the README no longer matched. | `REBUILD_SAMPLE` flag, off by default; notebook 02 recomputes flags and scores with the current code. |
+| The README called the sales-weighted median "what buyers pay" and said the deal score "works as intended". | The sales-weighted median is shown with the best seller's share of units, and the deal score is described as designed but not validated (see Key findings). |
+
 ## Limitations
 
 - One search is one moment: prices change with flash sales and vouchers are not included.
 - `sold` is the cumulative number shown by Tiki, not sales over a fixed period.
 - Only the first 200 results in Tiki's ranking are collected, which favours promoted and popular products.
-- The deal-score weights are a reasoned choice, not learned from purchase data.
+- Sales are concentrated in 1–3 products per keyword, so every number weighted by sales (sales-weighted median, segment shares) mostly describes those few products.
+- The deal-score weights are a reasoned choice, not learned from purchase data, and the score has not been validated against later sales yet.
 - Lazada and Shopee data only covers the pages you saved, so the marketplaces have different sample sizes; a few accessories whose names contain the keyword (e.g. a *gaming* mouse pad) can slip into the main category.
+- HTML scraping (notebook 00) breaks as soon as Tiki renames a CSS class or changes the product card, is much slower than the API because a browser has to load and scroll the page, and misses the fields the card does not show.
 
-**Next steps:** after a few weeks of daily snapshots, a third notebook on price history (seasonality, real vs inflated discounts, sales velocity), and running the collection in the cloud (e.g. GitHub Actions) instead of a personal computer.
+**Next steps:** after a few weeks of daily snapshots, test the deal score out of time (score on day *t*, units sold in the following week, as described in notebook 02), add a notebook on price history (seasonality, real vs inflated discounts, sales velocity), and run the collection in the cloud (e.g. GitHub Actions) instead of a personal computer.
 
 ## Responsible data collection
 
