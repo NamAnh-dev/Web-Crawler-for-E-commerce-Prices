@@ -1,11 +1,12 @@
-"""Extract (learning version): scrape the rendered Tiki search page with Selenium + BeautifulSoup.
+"""Extract, the HTML way: scrape the rendered Tiki search page with Selenium + BeautifulSoup.
 
-This is how I first collected Tiki data: open the search page in a real
-browser, wait for the product cards, then read them from the HTML. Later I
-saw in DevTools > Network that the page itself loads the products from a
-JSON API, and switched the pipeline to that API (crawler/tiki.py): it is
-faster, gives more fields and does not break when the page design changes.
-This module is kept to compare both methods (notebooks/00_scraping_methods.ipynb).
+Reading the page a person sees (open it in a browser, wait for the product
+cards, parse the HTML) is the first scraping method I learned. DevTools >
+Network then showed that the page loads its products from a JSON API, so the
+pipeline uses that API instead (crawler/tiki.py): it is faster, gives more
+fields and does not break when the page design changes. This module was
+added in version 2 to compare both methods side by side
+(notebooks/00_scraping_methods.ipynb); it is not part of the pipeline.
 """
 import json
 import re
