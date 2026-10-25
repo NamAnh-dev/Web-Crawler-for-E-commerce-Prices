@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% set s = report.summary %}
+{% set p = report.prices %}
+{% set segment_names = {"budget": "giá rẻ", "mid": "tầm trung", "premium": "cao cấp"} %}
+
+{% block title %}{{ search.keyword }} · EcomCheck{% endblock %}
+{% block body_class %}page-result{% endblock %}
+
+{% macro product_card(item, index) %}
+  <a class="product card glow reveal" style="--i: {{ index }}" href="{{ item.product_url }}" target="_blank" rel="noopener">
+    <div class="product-image">
+      {% if item.image_url %}<img src="{{ item.image_url }}" alt="" loading="lazy">{% endif %}
+      {% if item.discount_pct %}<span class="tag tag-discount">-{{ item.discount_pct }}%</span>{% endif %}
+    </div>
+    <div class="product-body">
+      <h4>{{ item.name }}</h4>
+      <div class="product-price">
+        <strong>{{ item.price | vnd }}</strong>
+        {% if item.discount_pct %}<s>{{ item.original_price | vnd }}</s>{% endif %}
+      </div>
+      <div class="product-meta">
+        <span>Đã bán {{ item.sold | number }}</span>
+        {% if item.rating %}<span class="stars">★ {{ item.rating }}</span>{% endif %}
+      </div>
+    </div>
+  </a>
+{% endmacro %}
+
+{% block content %}
+<section class="result-hero">
+  <div class="hero-bg" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="grid-lines"></span>
+  </div>
+  <div class="container result-hero-inner">
+    <a class="back-link reveal" href="{{ url_for('index') }}">← Tìm kiếm mới</a>
+    <h1 class="reveal" style="--i: 1">“{{ search.keyword }}”</h1>
+    <div class="meta-chips reveal" style="--i: 2">
+      <span class="meta-chip">📦 {{ search.category }}</span>
+      <span class="meta-chip">{{ s.products }} sản phẩm</span>
+      <span class="meta-chip">🕒 {{ search.created_at }}</span>
+    </div>
+    <div class="hero-actions reveal" style="--i: 3">
+      <a class="btn btn-light" href="{{ url_for('download_csv', search_id=search.id) }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Tải CSV
+      </a>
+      <form method="post" action="{{ url_for('search') }}" data-loading>
+        <input type="hidden" name="keyword" value="{{ search.keyword }}">
+        <button type="submit" class="btn btn-ghost">↻ Thu thập lại</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="container kpis">
+  <article class="kpi card glow reveal" style="--i: 1">
+    <span class="kpi-label">Giá sàn tham khảo</span>
+    <strong class="kpi-value" data-count="{{ p.floor }}" data-format="vnd">{{ p.floor | vnd }}</strong>
+    <span class="kpi-note">90% sản phẩm bán đắt hơn</span>
+  </article>
+  <article class="kpi card glow reveal" style="--i: 2">
+    <span class="kpi-label">Giá trung vị</span>
+    <strong class="kpi-value" data-count="{{ p.median }}" data-format="vnd">{{ p.median | vnd }}</strong>
+    <span class="kpi-note">một nửa rẻ hơn, một nửa đắt hơn</span>
+  </article>
+  <article class="kpi card glow reveal" style="--i: 3">
+    <span class="kpi-label">Khoảng giá phổ biến</span>
+    <strong class="kpi-value">{{ p.q1 | short_price }} – {{ p.q3 | short_price }}</strong>
+    <span class="kpi-note">50% sản phẩm ở giữa (Q1–Q3)</span>
+  </article>
+  <article class="kpi card glow reveal" style="--i: 4">
+    <span class="kpi-label">Tổng lượt bán</span>
+    <strong class="kpi-value" data-count="{{ s.total_sold }}" data-format="number">{{ s.total_sold | number }}</strong>
+    <span class="kpi-note">cộng dồn từ trước đến nay</span>
+  </article>
+</section>
+
+<section class="container card range-card reveal">
+  <div class="card-head">
+    <h2>Thang giá</h2>
+    <p>Từ sản phẩm rẻ nhất đến đắt nhất (đã bỏ giá bất thường), trên thang log để phần giá rẻ không bị dồn lại.</p>
+  </div>
+  <div class="range" data-min="{{ p.min }}" data-max="{{ p.max }}">
+    <div class="range-track"></div>
+    <div class="range-band" data-from="{{ p.q1 }}" data-to="{{ p.q3 }}"></div>
+    <div class="range-marker marker-floor" data-value="{{ p.floor }}"><span>Giá sàn<br><strong>{{ p.floor | short_price }}</strong></span></div>
+    <div class="range-marker marker-median" data-value="{{ p.median }}"><span>Trung vị<br><strong>{{ p.median | short_price }}</strong></span></div>
+  </div>
+  <div class="range-ends">
+    <span>{{ p.min | short_price }}</span>
+    <span class="range-legend"><i></i> Khoảng phổ biến {{ p.q1 | short_price }} – {{ p.q3 | short_price }}</span>
+    <span>{{ p.max | short_price }}</span>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="section-head reveal">
+    <span class="kicker">Nhận xét</span>
+    <h2>Dữ liệu cho thấy điều gì?</h2>
+  </div>
+  <div class="insights">
+    <article class="insight card reveal" style="--i: 1">
+      <span class="insight-icon i-blue">₫</span>
+      <p>Một nửa số sản phẩm có giá từ <strong>{{ p.q1 | vnd }}</strong> đến <strong>{{ p.q3 | vnd }}</strong>.
+         Rẻ hơn <strong>{{ p.floor | vnd }}</strong> là thuộc nhóm 10% rẻ nhất: nên xem kỹ sản phẩm trước khi mua.</p>
+    </article>
+    {% if s.total_sold %}
+      <article class="insight card reveal" style="--i: 2">
+        <span class="insight-icon i-violet">★</span>
+        <p>Sản phẩm bán chạy nhất chiếm <strong>{{ s.best_seller_share | round | int }}%</strong> tổng lượt bán:
+           <em>{{ s.best_seller }}</em>. Còn <strong>{{ s.never_sold_share | round | int }}%</strong> sản phẩm chưa bán được cái nào.</p>
+      </article>
+    {% endif %}
+    {% if s.top_segment %}
+      <article class="insight card reveal" style="--i: 3">
+        <span class="insight-icon i-cyan">▤</span>
+        <p>Phân khúc <strong>{{ segment_names[s.top_segment.segment] }}</strong> chiếm
+           {{ s.top_segment.listing_share | round | int }}% số sản phẩm nhưng có
+           <strong>{{ s.top_segment.sold_share | round | int }}%</strong> lượt bán.</p>
+      </article>
+    {% endif %}
+    <article class="insight card reveal" style="--i: 4">
+      <span class="insight-icon i-amber">!</span>
+      <p><strong>{{ s.unusual }}</strong> sản phẩm có giá bất thường (quá rẻ hoặc quá đắt so với phần còn lại) nên không được tính vào giá tham khảo.
+         <strong>{{ (100 - s.rated_share) | round | int }}%</strong> sản phẩm chưa có đánh giá nào.</p>
+    </article>
+  </div>
+</section>
+
+<section class="container charts">
+  <article class="card chart-card reveal" style="--i: 1">
+    <div class="card-head">
+      <h2>Phân bố giá</h2>
+      <p>Số sản phẩm trong từng khoảng giá.</p>
+    </div>
+    <div class="chart-box"><canvas id="chart-histogram" aria-label="Biểu đồ phân bố giá" role="img"></canvas></div>
+  </article>
+  <article class="card chart-card reveal" style="--i: 2">
+    <div class="card-head">
+      <h2>Phân khúc nào bán chạy?</h2>
+      <p>% số sản phẩm so với % lượt bán. Rẻ: đến Q1 · Tầm trung: Q1–Q3 · Cao cấp: trên Q3.</p>
+    </div>
+    <div class="chart-box"><canvas id="chart-segments" aria-label="Biểu đồ phân khúc giá" role="img"></canvas></div>
+  </article>
+  <article class="card chart-card chart-wide reveal" style="--i: 3">
+    <div class="card-head">
+      <h2>Thương hiệu bán chạy</h2>
+      <p>Tổng lượt bán theo thương hiệu (không tính sản phẩm không rõ thương hiệu).</p>
+    </div>
+    <div class="chart-box chart-box-wide"><canvas id="chart-brands" aria-label="Biểu đồ thương hiệu" role="img"></canvas></div>
+  </article>
+</section>
+
+<section class="section container picks">
+  <div>
+    <div class="section-head reveal">
+      <span class="kicker">Top</span>
+      <h2>Bán chạy nhất</h2>
+    </div>
+    <div class="product-grid">
+      {% for item in report.best_sellers %}{{ product_card(item, loop.index) }}{% endfor %}
+    </div>
+  </div>
+  <div>
+    <div class="section-head reveal">
+      <span class="kicker">Gợi ý</span>
+      <h2>Đáng mua</h2>
+      <p class="section-note">Giá không cao hơn trung vị, từ 4,5★ với ít nhất 5 đánh giá, bán nhiều nhất trước.</p>
+    </div>
+    {% if report.good_deals %}
+      <div class="product-grid">
+        {% for item in report.good_deals %}{{ product_card(item, loop.index) }}{% endfor %}
+      </div>
+    {% else %}
+      <div class="empty card reveal"><p>Chưa có sản phẩm nào thỏa cả ba điều kiện.</p></div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card table-card reveal">
+    <div class="table-head">
+      <div>
+        <h2>Tất cả sản phẩm</h2>
+        <p><span id="row-count">{{ s.products }}</span> sản phẩm</p>
+      </div>
+      <div class="table-tools">
+        <input type="search" id="table-filter" placeholder="Lọc theo tên…" aria-label="Lọc theo tên">
+        <select id="table-sort" aria-label="Sắp xếp">
+          <option value="sold">Bán chạy</option>
+          <option value="price-asc">Giá tăng dần</option>
+          <option value="price-desc">Giá giảm dần</option>
+          <option value="rating">Đánh giá cao</option>
+          <option value="discount">Giảm giá nhiều</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="products-table">
+        <thead>
+          <tr><th>Sản phẩm</th><th class="num">Giá</th><th class="num">Đã bán</th><th class="num">Đánh giá</th><th>Ghi chú</th></tr>
+        </thead>
+        <tbody id="product-rows">
+          {% for item in report.products %}
+            <tr data-price="{{ item.price }}" data-sold="{{ item.sold }}" data-rating="{{ item.rating or 0 }}" data-discount="{{ item.discount_pct }}">
+              <td>
+                <a class="cell-product" href="{{ item.product_url }}" target="_blank" rel="noopener">
+                  {% if item.image_url %}<img src="{{ item.image_url }}" alt="" loading="lazy">{% endif %}
+                  <span>
+                    <span class="cell-name">{{ item.name }}</span>
+                    <span class="cell-brand">{{ item.brand or "Không rõ thương hiệu" }}</span>
+                  </span>
+                </a>
+              </td>
+              <td class="num">
+                <strong>{{ item.price | vnd }}</strong>
+                {% if item.discount_pct %}<span class="cell-discount">-{{ item.discount_pct }}%</span>{% endif %}
+              </td>
+              <td class="num">{{ item.sold | number }}</td>
+              <td class="num">{% if item.rating %}<span class="stars">★ {{ item.rating }}</span> <small>({{ item.review_count }})</small>{% else %}<span class="muted">–</span>{% endif %}</td>
+              <td>
+                {% if item.price_flag == "low" %}<span class="tag tag-low">Rẻ bất thường</span>
+                {% elif item.price_flag == "high" %}<span class="tag tag-high">Đắt bất thường</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="table-foot">
+      <button type="button" class="btn btn-soft" id="show-more">Xem thêm</button>
+    </div>
+  </div>
+</section>
+
+<section class="section container method">
+  <div class="section-head reveal">
+    <span class="kicker">Phương pháp</span>
+    <h2>Các con số được tính thế nào?</h2>
+  </div>
+  <div class="accordion">
+    <details class="card reveal" style="--i: 1">
+      <summary>Giá bất thường (quy tắc IQR trên log giá)</summary>
+      <p>Giá sản phẩm lệch phải: nhiều sản phẩm rẻ, ít sản phẩm rất đắt. Vì vậy quy tắc IQR được áp dụng trên log10(giá):
+         giá nằm ngoài khoảng [Q1 − 1,5·IQR, Q3 + 1,5·IQR] bị coi là bất thường và không được tính vào giá tham khảo.
+         Lần tìm này có {{ s.unusual }} sản phẩm như vậy{% if report.unusual %}:{% else %}.{% endif %}</p>
+      {% if report.unusual %}
+        <ul class="unusual-list">
+          {% for item in report.unusual %}
+            <li><span class="tag {{ 'tag-low' if item.price_flag == 'low' else 'tag-high' }}">{{ item.price | vnd }}</span> {{ item.name }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </details>
+    <details class="card reveal" style="--i: 2">
+      <summary>Giá sàn, trung vị và khoảng giá phổ biến</summary>
+      <p>Giá sàn tham khảo là phân vị thứ 10 (P10): 90% sản phẩm có giá cao hơn. Khoảng giá phổ biến là từ Q1 (phân vị 25) đến Q3 (phân vị 75),
+         tức 50% sản phẩm ở giữa. Các giá được làm tròn đến 1.000 ₫.</p>
+    </details>
+    <details class="card reveal" style="--i: 3">
+      <summary>Dữ liệu đến từ đâu và có giới hạn gì?</summary>
+      <p>API tìm kiếm công khai của Tiki (5 trang đầu, tối đa 200 sản phẩm), chỉ giữ danh mục chính của từ khóa.
+         "Đã bán" là số cộng dồn Tiki hiển thị, không phải doanh số trong một khoảng thời gian; giá có thể thay đổi theo giờ và chưa tính voucher.</p>
+    </details>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script id="report-data" type="application/json">{{ {"histogram": report.histogram, "segments": report.segments, "brands": report.brands} | tojson }}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Không tìm thấy · EcomCheck{% endblock %}
+{% block body_class %}page-404{% endblock %}
+
+{% block content %}
+<section class="hero hero-small">
+  <div class="hero-bg" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="grid-lines"></span>
+  </div>
+  <div class="container not-found">
+    <span class="big-404 gradient-text reveal">404</span>
+    <h1 class="reveal" style="--i: 1">Không tìm thấy trang này</h1>
+    <p class="lead reveal" style="--i: 2">Có thể kết quả tìm kiếm này không còn trong cơ sở dữ liệu.</p>
+    <a class="btn btn-primary reveal" style="--i: 3" href="{{ url_for('index') }}">← Về trang tìm kiếm</a>
+  </div>
+</section>
+{% endblock %}

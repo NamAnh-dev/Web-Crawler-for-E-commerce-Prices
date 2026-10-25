@@ -1,13 +1,9 @@
-# Web app + data pipeline
+# Web app and data pipeline
 flask>=3.0
+requests>=2.31
+beautifulsoup4>=4.12
 pandas>=2.1
 numpy>=1.26
-requests>=2.31
-python-dotenv>=1.0
-
-# HTML scraping (crawler/tiki_html.py, notebook 00); Selenium also needs Google Chrome
-beautifulsoup4>=4.12
-selenium>=4.11
 
 # Notebooks and tests
 matplotlib>=3.8
