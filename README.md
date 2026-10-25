@@ -42,7 +42,7 @@ flowchart LR
 3. **Analyse** — inside each category (so mouse pads never pull down the price of gaming mice):
    - **Unusual prices**: Tukey's IQR rule on `log10(price)`, because prices are right-skewed.
    - **Floor price** (*giá sàn tham khảo*): the 10th percentile of normal prices — 90 % of listings cost more.
-   - **Common range**: Q1–Q3. **Sales-weighted median**: what buyers actually pay.
+   - **Common range**: Q1–Q3. **Sales-weighted median**: the median price of the units sold, shown with the best seller's share of units because one product often decides it.
    - **Deal score (0–100)**: `0.3 × cheap rank + 0.4 × sold rank + 0.3 × rating rank`, with ratings adjusted by a Bayesian average so that 5★ from one review does not beat 4.8★ from a thousand.
    - **Marketplace comparison**: floor price, common range and sales-weighted median per marketplace, on one price line.
    - **Price history** (from the daily snapshots): the *like-for-like* price change of products present in every snapshot — the market median can move just because the product mix changed — and units actually sold between two snapshots (`sold` is cumulative).
@@ -52,21 +52,21 @@ flowchart LR
 
 From the sample analysed in [`02_price_analysis.ipynb`](notebooks/02_price_analysis.ipynb): 567 products for three keywords, collected from Tiki on 24 October 2026, each analysed in its main category.
 
-| Keyword | Floor price (P10) | Common range (Q1–Q3) | Median listing | What buyers pay* |
-|---|---|---|---|---|
-| chuột gaming | 150K | 244K – 793K | 398K | **472K** |
-| tai nghe bluetooth (true wireless) | 355K | 560K – 1.3M | 699K | **525K** |
-| nồi chiên không dầu | 1.33M | 1.99M – 4.2M | 2.69M | **2.17M** |
+| Keyword | Floor price (P10) | Common range (Q1–Q3) | Median listing | Sales-weighted median* | Best seller's share of units | Without the best seller* |
+|---|---|---|---|---|---|---|
+| chuột gaming | 150K | 244K – 793K | 398K | 472K | 37 % | 805K |
+| tai nghe bluetooth (true wireless) | 355K | 560K – 1.3M | 699K | 525K | 45 % | 3.09M |
+| nồi chiên không dầu | 1.33M | 1.99M – 4.2M | 2.69M | 2.17M | 87 % | 2.39M |
 
-<sub>* sales-weighted median: the median price of the units actually sold.</sub>
+<sub>* sales-weighted median: line up every unit sold by price and take the middle one. "Without the best seller": the same, after removing the top-selling product.</sub>
 
 ![Reference prices](docs/figures/reference_prices.png)
 
-1. **Listing prices are not paid prices.** Buyers of gaming mice pay 19 % *more* than the median listing; buyers of earbuds and air fryers pay 19–25 % *less*.
-2. **Winner-take-most markets.** The top 10 % of listings take 91–99 % of all units sold, and 37–68 % of listings have never sold. One air fryer accounts for 87 % of units sold.
-3. **The cheapest is not what sells** — for gaming mice the cheapest quarter of listings gets only 4 % of sales, while for earbuds it gets 51 %.
-4. **Star ratings say little.** The median rated product has 5.0★ and 69 % of products have no rating; the number of reviews is a far better proxy for popularity (Spearman ρ 0.71–0.88 with units sold).
-5. **The deal score works as intended**: its top-10 products cost about half the median price and still sell (median 15–54 units vs 0–1 overall).
+1. **"What buyers pay" is the price of the best seller.** One product sells 37 % (mice), 45 % (earbuds) and 87 % (air fryers) of all units, so the sales-weighted median is that product's price or sits right next to it. Remove that one product and the number jumps to the next best seller's price (805K, 3.09M, 2.39M). The gap to the median listing (+19 % for mice, −25 % and −19 % for the others) shows how concentrated these markets are, not a general rule about what buyers pay.
+2. **Winner-take-most markets.** The top 10 % of listings take 91–99 % of all units sold, and 37–68 % of listings have never sold.
+3. **The cheapest is not what sells** — for gaming mice the cheapest quarter of listings gets only 4 % of units sold. For earbuds it gets 51 %, but mostly through one 359K product.
+4. **Star ratings say little.** The median rated product has 5.0★ and 69 % of products have no rating. The number of reviews follows sales much more closely: Spearman ρ 0.71–0.88 on all products, and still 0.72–0.83 on products that sold at least once, so it is not just the many products with 0 sold and 0 reviews. A review needs a purchase, so this is a consistency check on the data rather than a cause of sales.
+5. **The deal score behaves as designed, but it is not validated.** Its top-10 products are cheaper than the median listing and have sold more (median 9–54 units vs 0–1 overall), partly by construction: units sold are 40 % of the score. An out-of-time test (score on day *t*, units sold between *t* and *t + 7*) is described in the notebook and needs a week of daily snapshots.
 
 | Price segments: listings vs units sold | Sales concentration |
 |---|---|
