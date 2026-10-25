@@ -158,6 +158,9 @@ def source_comparison(df):
             continue  # no normal price: no reference prices to show
         rows.append({"source": source, "products": len(group), "sold": int(group["sold"].sum()),
                      "rated_share": 100 * group["rating"].notna().mean(), **price_band(group)})
+    if not rows:
+        return []  # no marketplace has a normal price: nothing to compare (min() of nothing fails)
+
     start = min(row["floor"] for row in rows)
     end = max(row["ceiling"] for row in rows)
     for row in rows:
