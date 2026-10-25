@@ -170,18 +170,12 @@
       <span>Ngược lại, phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng chỉ <strong>{{ s.sales_share | number }}% lượt bán</strong>{% if s.segment == "budget" %}: rẻ nhất không có nghĩa là bán chạy nhất{% endif %}.</span></li>
     {% endif %}
 
-    {% if b.sales_weighted_median %}{% set n.i = n.i + 1 %}
-    {% set ratio = b.sales_weighted_median / b.median %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Tính theo lượt bán, giá người mua thực trả ở mức khoảng <strong>{{ b.sales_weighted_median | vnd }}</strong>,
-      {% if ratio > 1.1 %}cao hơn {{ ((ratio - 1) * 100) | number }}% so với giá trung vị niêm yết: sản phẩm bán chạy nằm ở mức giá cao hơn mặt bằng chung.
-      {% elif ratio < 0.9 %}thấp hơn {{ ((1 - ratio) * 100) | number }}% so với giá trung vị niêm yết: sản phẩm bán chạy nằm ở mức giá thấp hơn mặt bằng chung.
-      {% else %}gần với giá trung vị niêm yết.{% endif %}</span></li>
-    {% endif %}
-
     {% if data.best_sellers and k.total_sold %}{% set top = data.best_sellers[0] %}{% set n.i = n.i + 1 %}
+    {% set top_share = 100 * top.sold / k.total_sold %}
     <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Sản phẩm bán chạy nhất chiếm <strong>{{ (100 * top.sold / k.total_sold) | number }}%</strong> tổng lượt bán ({{ top.name | truncate(60) }}).</span></li>
+      <span>Sản phẩm bán chạy nhất chiếm <strong>{{ top_share | number }}% tổng lượt bán</strong> ({{ top.name | truncate(60) }}, {{ top.price | vnd }}).
+      {% if b.sales_weighted_median and top_share >= 30 %}Vì vậy giá theo lượt bán ({{ b.sales_weighted_median | vnd }}) gần như là giá của một vài sản phẩm bán chạy, không phải mức giá chung mà người mua chấp nhận.
+      {% elif b.sales_weighted_median %}Giá theo lượt bán là {{ b.sales_weighted_median | vnd }}, trung vị niêm yết là {{ b.median | vnd }}.{% endif %}</span></li>
     {% endif %}
 
     {% set n.i = n.i + 1 %}
