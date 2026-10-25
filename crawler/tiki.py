@@ -13,23 +13,40 @@ import config
 SEARCH_URL = "https://tiki.vn/api/v2/products"
 PAGE_SIZE = 40  # the API ignores larger values
 HEADERS = {"User-Agent": config.USER_AGENT, "Referer": "https://tiki.vn/"}
+RATE_LIMIT_STATUS = (429, 503)  # "too many requests" / "service busy": wait and try again
+MAX_WAIT = 60                    # seconds; a web search should not hang for minutes
+
+
+def wait_seconds(response, attempt):
+    """How long to wait before trying again.
+
+    If the server says how long (the Retry-After header, in seconds), we follow
+    it, up to MAX_WAIT. Otherwise we wait 15 s, then 30 s.
+    """
+    retry_after = response.headers.get("Retry-After", "")
+    if retry_after.isdigit():
+        return min(int(retry_after), MAX_WAIT)
+    return 15 * (attempt + 1)
 
 
 def get_page(keyword, page, retries=2):
     """One page of search results as JSON.
 
-    When too many requests are sent, Tiki answers with an HTML page instead of
-    JSON for a short while. We respect that: wait (15 s, then 30 s) and retry.
+    When too many requests are sent, Tiki answers with HTTP 429 (or 503), or
+    with an HTML page instead of JSON. We respect that: wait and retry.
+    The status is checked before raise_for_status(), otherwise a 429 would
+    stop the crawl at once instead of backing off.
     """
     params = {"q": keyword, "page": page, "limit": PAGE_SIZE}
     for attempt in range(retries + 1):
         response = requests.get(SEARCH_URL, params=params, headers=HEADERS,
                                 timeout=config.REQUEST_TIMEOUT)
-        response.raise_for_status()
-        if "json" in response.headers.get("Content-Type", ""):
-            return response.json()
+        if response.status_code not in RATE_LIMIT_STATUS:
+            response.raise_for_status()  # other errors (404, 500...) are not retried
+            if "json" in response.headers.get("Content-Type", ""):
+                return response.json()
         if attempt < retries:
-            time.sleep(15 * (attempt + 1))
+            time.sleep(wait_seconds(response, attempt))
     raise RuntimeError("Tiki is limiting requests right now. Try again in a few minutes.")
 
 

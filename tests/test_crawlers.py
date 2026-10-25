@@ -1,4 +1,9 @@
 """Parsers of the two sources, tested on saved examples (no internet needed)."""
+from unittest.mock import Mock, call, patch
+
+import pytest
+import requests
+
 from crawler import lazada, tiki
 
 TIKI_ITEM = {
@@ -59,3 +64,43 @@ def test_lazada_full_url():
     assert lazada.full_url("/products/a.html") == "https://www.lazada.vn/products/a.html"
     assert lazada.full_url("https://www.lazada.vn/a") == "https://www.lazada.vn/a"
     assert lazada.full_url(None) is None
+
+
+# --- Tiki rate limit: requests.get and time.sleep are replaced by fakes ---
+
+def fake_response(status, content_type="application/json", retry_after=None):
+    """A stand-in for requests.Response with only what get_page() reads."""
+    response = Mock(status_code=status, headers={"Content-Type": content_type})
+    if retry_after:
+        response.headers["Retry-After"] = retry_after
+    response.json.return_value = {"data": [], "paging": {"last_page": 1}}
+    if status >= 400:
+        response.raise_for_status.side_effect = requests.HTTPError(f"HTTP {status}")
+    return response
+
+
+@patch("crawler.tiki.time.sleep")
+@patch("crawler.tiki.requests.get")
+def test_get_page_waits_and_retries_after_429(fake_get, fake_sleep):
+    fake_get.side_effect = [fake_response(429, "text/html", retry_after="5"), fake_response(200)]
+    data = tiki.get_page("chuột gaming", 1)
+    assert data["paging"]["last_page"] == 1
+    fake_sleep.assert_called_once_with(5)                 # follows the Retry-After header
+
+
+@patch("crawler.tiki.time.sleep")
+@patch("crawler.tiki.requests.get")
+def test_get_page_gives_up_after_the_last_retry(fake_get, fake_sleep):
+    fake_get.return_value = fake_response(503)
+    with pytest.raises(RuntimeError):
+        tiki.get_page("chuột gaming", 1)
+    assert fake_sleep.call_args_list == [call(15), call(30)]   # no Retry-After: 15 s, then 30 s
+
+
+@patch("crawler.tiki.time.sleep")
+@patch("crawler.tiki.requests.get")
+def test_get_page_does_not_retry_other_errors(fake_get, fake_sleep):
+    fake_get.return_value = fake_response(404)
+    with pytest.raises(requests.HTTPError):
+        tiki.get_page("chuột gaming", 1)
+    fake_sleep.assert_not_called()
