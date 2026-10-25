@@ -452,19 +452,6 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 .band-mini { margin: 14px 0 12px; height: 6px; }
 .band-mini .band-mark { top: -4px; bottom: -4px; }
 
-/* Search: waiting screen with the pipeline steps */
-.loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 10, 10, 0.72); backdrop-filter: blur(4px); }
-.loading[hidden] { display: none; }
-.loading-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
-.loading-card h2 { font-size: 22px; margin-bottom: 18px; }
-.loading-steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 12px; }
-.loading-steps li { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; }
-.loading-steps li::before { content: ""; width: 18px; height: 18px; flex: none; border-radius: 50%; border: 2px solid var(--grid); box-sizing: border-box; }
-.loading-steps li.active { color: var(--ink); font-weight: 500; }
-.loading-steps li.active::before { border-color: var(--accent); border-right-color: transparent; animation: spin 0.8s linear infinite; }
-.loading-steps li.done { color: var(--ink-2); }
-.loading-steps li.done::before { border: 0; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 12px no-repeat; }
-
 /* Dashboard: dark headline panel */
 .hero-panel {
   display: grid; gap: 28px; margin-top: 20px; padding: 28px; border-radius: 16px;
@@ -497,7 +484,6 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border: 1p
 }
 
 /* Gentle entrance animations (switched off when the user prefers less motion) */
-@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .hero-copy, .preview, main > section { animation: rise 0.5s ease both; }
