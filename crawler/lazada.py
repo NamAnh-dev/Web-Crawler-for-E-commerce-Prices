@@ -52,7 +52,7 @@ def parse_item(item):
         "name": item.get("name"),
         "brand": item.get("brandName"),
         "seller": item.get("sellerName"),
-        "category": None,  # only category ids are sent, see analysis/categories.py
+        "category": None,  # only category ids are sent; set to the main category on import
         "price": to_number(item.get("price")),
         "original_price": to_number(item.get("originalPrice")),
         "sold": parse_sold(item.get("itemSoldCntShow")),  # "1.2K sold" -> 1200

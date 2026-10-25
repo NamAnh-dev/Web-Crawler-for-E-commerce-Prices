@@ -29,7 +29,7 @@ def parse_item(item):
         "name": basic.get("name"),
         "brand": basic.get("brand"),
         "seller": basic.get("shop_name"),
-        "category": None,  # only a category id is sent, see analysis/categories.py
+        "category": None,  # only a category id is sent; set to the main category on import
         "price": price / PRICE_UNIT,
         "original_price": price_before / PRICE_UNIT or None,
         "sold": basic.get("historical_sold") or basic.get("sold") or 0,  # cumulative, like Tiki

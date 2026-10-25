@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS search_runs (
 CREATE TABLE IF NOT EXISTS products (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id          INTEGER NOT NULL REFERENCES search_runs(id) ON DELETE CASCADE,
-    source          TEXT    NOT NULL,        -- Tiki / Lazada
+    source          TEXT    NOT NULL,        -- Tiki / Lazada / Shopee
     product_id      TEXT    NOT NULL,        -- id on the source website
     name            TEXT    NOT NULL,
     brand           TEXT,
