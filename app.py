@@ -127,6 +127,9 @@ def products(run_id):
     }
     page = max(request.args.get("page", 1, type=int), 1)
     rows, total = db.search_products(run_id, **filters, page=page, per_page=PER_PAGE)
+    pages = max(math.ceil(total / PER_PAGE), 1)
+    if page > pages:  # e.g. an old link to page 9 after the filters changed
+        return redirect(url_with(page=pages))
 
     return render_template(
         "results.html",
@@ -134,7 +137,7 @@ def products(run_id):
         products=rows,
         total=total,
         page=page,
-        pages=max(math.ceil(total / PER_PAGE), 1),
+        pages=pages,
         filters=filters,
         categories=categories,
     )
