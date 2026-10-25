@@ -37,17 +37,19 @@ def flag_prices(prices):
 
 # --- 2. Deal score --------------------------------------------------------------
 
-def adjusted_rating(rating, review_count):
-    """Bayesian average: pull ratings with few reviews toward the average rating.
+def adjusted_rating(df):
+    """Bayesian average: pull ratings with few reviews toward the category average.
 
     5.0 stars from 1 review is less convincing than 4.8 stars from 1 000
     reviews. Formula (also used for IMDb's Top 250): (v*R + m*C) / (v + m)
-    v = number of reviews, R = product rating, C = average rating, m = PRIOR_REVIEWS
-    A product without reviews simply gets the average rating C.
+    v = number of reviews, R = product rating, m = PRIOR_REVIEWS,
+    C = average rating of the product's category, because every other part
+    of the deal score also compares a product only with its own category.
+    A product without reviews simply gets C.
     """
-    average = rating.mean()
-    rating = rating.fillna(average)
-    return (review_count * rating + PRIOR_REVIEWS * average) / (review_count + PRIOR_REVIEWS)
+    average = df.groupby("category")["rating"].transform("mean")   # C, one value per category
+    rating = df["rating"].fillna(average)
+    return (df["review_count"] * rating + PRIOR_REVIEWS * average) / (df["review_count"] + PRIOR_REVIEWS)
 
 
 def deal_scores(df):
@@ -58,7 +60,7 @@ def deal_scores(df):
     unusual price (often accessories or wrong listings) get no score.
     """
     normal = df[df["price_flag"] == "normal"].copy()
-    normal["rating_adj"] = adjusted_rating(normal["rating"], normal["review_count"])
+    normal["rating_adj"] = adjusted_rating(normal)
     by_category = normal.groupby("category")
 
     price_score = 1 - by_category["price"].rank(pct=True)    # cheapest -> close to 1
