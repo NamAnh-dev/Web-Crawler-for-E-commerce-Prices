@@ -77,21 +77,23 @@
   </article>
 </section>
 
-<section class="container card range-card reveal">
-  <div class="card-head">
-    <h2>Thang giá</h2>
-    <p>Từ sản phẩm rẻ nhất đến đắt nhất (đã bỏ giá bất thường), trên thang log để phần giá rẻ không bị dồn lại.</p>
-  </div>
-  <div class="range" data-min="{{ p.min }}" data-max="{{ p.max }}">
-    <div class="range-track"></div>
-    <div class="range-band" data-from="{{ p.q1 }}" data-to="{{ p.q3 }}"></div>
-    <div class="range-marker marker-floor" data-value="{{ p.floor }}"><span>Giá sàn<br><strong>{{ p.floor | short_price }}</strong></span></div>
-    <div class="range-marker marker-median" data-value="{{ p.median }}"><span>Trung vị<br><strong>{{ p.median | short_price }}</strong></span></div>
-  </div>
-  <div class="range-ends">
-    <span>{{ p.min | short_price }}</span>
-    <span class="range-legend"><i></i> Khoảng phổ biến {{ p.q1 | short_price }} – {{ p.q3 | short_price }}</span>
-    <span>{{ p.max | short_price }}</span>
+<section class="container">
+  <div class="card range-card reveal">
+    <div class="card-head">
+      <h2>Thang giá</h2>
+      <p>Từ sản phẩm rẻ nhất đến đắt nhất (đã bỏ giá bất thường), trên thang log để phần giá rẻ không bị dồn lại.</p>
+    </div>
+    <div class="range" data-min="{{ p.min }}" data-max="{{ p.max }}">
+      <div class="range-track"></div>
+      <div class="range-band" data-from="{{ p.q1 }}" data-to="{{ p.q3 }}"></div>
+      <div class="range-marker marker-floor" data-value="{{ p.floor }}"><span>Giá sàn<br><strong>{{ p.floor | short_price }}</strong></span></div>
+      <div class="range-marker marker-median" data-value="{{ p.median }}"><span>Trung vị<br><strong>{{ p.median | short_price }}</strong></span></div>
+    </div>
+    <div class="range-ends">
+      <span>{{ p.min | short_price }}</span>
+      <span class="range-legend"><i></i> Khoảng phổ biến {{ p.q1 | short_price }} – {{ p.q3 | short_price }}</span>
+      <span>{{ p.max | short_price }}</span>
+    </div>
   </div>
 </section>
 
