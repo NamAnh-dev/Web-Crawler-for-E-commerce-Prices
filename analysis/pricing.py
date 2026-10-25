@@ -150,8 +150,12 @@ def summarize(df):
 
 def source_comparison(df):
     """Reference prices and sales per marketplace, drawn on one shared price line."""
+    sources = sorted(df["source"].unique())
+    if "Tiki" in sources:  # Tiki first: it is the main source
+        sources.remove("Tiki")
+        sources.insert(0, "Tiki")
+
     rows = []
-    sources = sorted(df["source"].unique(), key=lambda s: (s != "Tiki", s))  # Tiki first
     for source in sources:
         group = df[df["source"] == source]
         if not (group["price_flag"] == "normal").any():
@@ -210,18 +214,17 @@ def segment_table(df, band):
 def group_summary(df, column, top=8):
     """Products, median price, units sold and average rating per brand/seller/source."""
     data = df[df[column].notna()]
-    return (data.groupby(column)
-                .agg(products=("product_id", "size"), median_price=("price", "median"),
-                     sold=("sold", "sum"), avg_rating=("rating", "mean"))
-                .sort_values(["sold", "products"], ascending=False)
-                .head(top)
-                .reset_index()
-                .rename(columns={column: "name"}))
+    summary = data.groupby(column).agg(products=("product_id", "size"), median_price=("price", "median"),
+                                       sold=("sold", "sum"), avg_rating=("rating", "mean"))
+    summary = summary.sort_values(["sold", "products"], ascending=False).head(top)
+    return summary.reset_index().rename(columns={column: "name"})
 
 
 def records(df):
     """DataFrame -> list of dicts, with None instead of NaN (easier in templates)."""
-    return df.astype(object).where(df.notna(), None).to_dict("records")
+    data = df.astype(object)             # object columns can hold None
+    data = data.where(df.notna(), None)  # NaN -> None
+    return data.to_dict("records")
 
 
 def build_dashboard(df):

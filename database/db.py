@@ -185,9 +185,13 @@ def search_products(run_id, q="", min_price=None, max_price=None, min_sold=None,
         ("source = ?", source or None),
         ("category = ?", category or None),
     ]
-    active = [(sql, value) for sql, value in filters if value is not None]
-    where = " AND ".join(["run_id = ?"] + [sql for sql, _ in active])
-    params = [run_id] + [value for _, value in active]
+    conditions = ["run_id = ?"]
+    params = [run_id]
+    for sql, value in filters:
+        if value is not None:  # filter left empty: not used
+            conditions.append(sql)
+            params.append(value)
+    where = " AND ".join(conditions)
     order_by = SORT_OPTIONS.get(sort, SORT_OPTIONS["deal"])
 
     conn = get_connection()

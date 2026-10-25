@@ -20,7 +20,10 @@ def parse_item(item):
     rating = basic.get("item_rating") or {}
     item_id = basic.get("itemid") or item.get("itemid")
     shop_id = basic.get("shopid") or item.get("shopid")
-    price = basic.get("price") or (item.get("item_card_display_price") or {}).get("price") or 0
+    price = basic.get("price")
+    if not price:  # some responses only have the price shown on the product card
+        card_price = item.get("item_card_display_price") or {}
+        price = card_price.get("price") or 0
     price_before = basic.get("price_before_discount") or 0
 
     return {
