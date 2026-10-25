@@ -19,7 +19,7 @@
                placeholder="Ví dụ: chuột gaming" autocomplete="off" required autofocus>
         <button class="btn btn-primary" type="submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          Phân tích giá
+          <span>Phân tích giá</span>
         </button>
       </form>
 
@@ -108,32 +108,31 @@
   </div>
 </section>
 {% endif %}
-
-{# Shown while the server collects and analyses: see static/js/count-up.js #}
-<div class="loading" id="loading" hidden>
-  <div class="loading-card" role="status" aria-live="polite">
-    <p class="eyebrow">Đang phân tích</p>
-    <h2 id="loading-keyword"></h2>
-    <ol class="loading-steps">
-      <li>Thu thập sản phẩm từ Tiki</li>
-      <li>Làm sạch và lọc sản phẩm liên quan</li>
-      <li>Tính giá sàn, khoảng giá và điểm đáng mua</li>
-      <li>Lưu kết quả và dựng dashboard</li>
-    </ol>
-    <p class="muted small">Thường mất khoảng 5–10 giây.</p>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+  const form = document.getElementById("search-form");
+  const button = form.querySelector("button");
+
   // Example chips fill the search box and submit it.
   document.querySelectorAll("[data-example]").forEach((chip) => {
     chip.addEventListener("click", () => {
-      const form = document.getElementById("search-form");
       form.keyword.value = chip.dataset.example;
       form.requestSubmit();
     });
+  });
+
+  // Collecting and analysing takes 5-10 s: show that the search is running.
+  form.addEventListener("submit", () => {
+    button.disabled = true;
+    button.querySelector("span").textContent = "Đang phân tích…";
+  });
+
+  // Coming back with the browser's Back button: make the button usable again.
+  window.addEventListener("pageshow", () => {
+    button.disabled = false;
+    button.querySelector("span").textContent = "Phân tích giá";
   });
 </script>
 {% endblock %}

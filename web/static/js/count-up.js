@@ -1,6 +1,6 @@
-// Small animations: numbers count up and the search shows the pipeline steps.
+// Small animation: numbers count up when the page opens.
 
-// 1. <span data-count="149900" data-decimals="0" data-suffix=" ₫"> counts from 0 to 149.900 ₫
+// <span data-count="149900" data-decimals="0" data-suffix=" ₫"> counts from 0 to 149.900 ₫
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const formatVi = (value, decimals) =>
   value.toLocaleString("vi-VN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -21,28 +21,3 @@ document.querySelectorAll("[data-count]").forEach((element) => {
   }
   requestAnimationFrame(frame);
 });
-
-// 2. While the server collects and analyses (5-10 s), light up the pipeline steps one by one.
-const searchForm = document.getElementById("search-form");
-if (searchForm) {
-  searchForm.addEventListener("submit", () => {
-    const overlay = document.getElementById("loading");
-    const steps = overlay.querySelectorAll("li");
-    document.getElementById("loading-keyword").textContent = `“${searchForm.keyword.value.trim()}”`;
-    overlay.hidden = false;
-
-    let current = 0;
-    steps[0].classList.add("active");
-    setInterval(() => {
-      if (current === steps.length - 1) return; // the last step waits for the next page
-      steps[current].classList.replace("active", "done");
-      current += 1;
-      steps[current].classList.add("active");
-    }, 1800);
-  });
-
-  // Coming back with the browser's Back button must not show the old overlay.
-  window.addEventListener("pageshow", (event) => {
-    if (event.persisted) document.getElementById("loading").hidden = true;
-  });
-}
