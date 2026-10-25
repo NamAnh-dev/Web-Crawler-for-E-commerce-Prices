@@ -44,11 +44,19 @@ def test_weighted_median():
 
 
 def test_adjusted_rating_prefers_many_reviews():
-    rating = pd.Series([5.0, 4.8, 4.0, 4.2, np.nan])
-    reviews = pd.Series([1, 1000, 50, 50, 0])
-    adjusted = adjusted_rating(rating, reviews)
+    df = pd.DataFrame({"category": "Chuột Chơi Game", "rating": [5.0, 4.8, 4.0, 4.2, np.nan],
+                       "review_count": [1, 1000, 50, 50, 0]})
+    adjusted = adjusted_rating(df)
     assert adjusted[1] > adjusted[0]                      # 4.8 from 1000 reviews beats 5.0 from 1
-    assert adjusted[4] == rating.mean()                   # no reviews -> the average
+    assert adjusted[4] == df["rating"].mean()             # no reviews -> the average
+
+
+def test_adjusted_rating_uses_the_average_of_each_category():
+    df = pd.DataFrame({"category": ["Chuột", "Chuột", "Lót chuột", "Lót chuột"],
+                       "rating": [5.0, np.nan, 3.0, np.nan], "review_count": [10, 0, 10, 0]})
+    adjusted = adjusted_rating(df)
+    assert adjusted[1] == 5.0      # not rated yet: gets the average of its own category...
+    assert adjusted[3] == 3.0      # ...not the overall average (4.0)
 
 
 def test_deal_score_range_and_unusual_prices():
