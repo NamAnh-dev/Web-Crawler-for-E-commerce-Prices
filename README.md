@@ -150,7 +150,7 @@ Settings (pages per search, pause between requests, database path…) can be cha
 
 ## Version 2: what I fixed after reviewing version 1
 
-Version 1 was built during my Data Collection / Data Analyst internship (2025) with MySQL. Re-running it a year later showed that it no longer collected any data, and a code review found several logic problems:
+Version 1 was built during my Data Collection internship at POS365 (2025) with MySQL. Re-running it a year later showed that it no longer collected any data, and a code review found several logic problems:
 
 | Version 1 | Version 2 |
 |---|---|
