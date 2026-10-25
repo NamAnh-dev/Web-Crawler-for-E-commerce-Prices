@@ -87,15 +87,15 @@ def price_segments(normal, prices):
 
 def price_histogram(prices):
     """Number of products in each round price range, from the cheapest to the most expensive."""
-    lowest = max(edge for edge in PRICE_RANGES if edge <= prices.min())
-    highest = min((edge for edge in PRICE_RANGES if edge > prices.max()), default=PRICE_RANGES[-1])
-    edges = [edge for edge in PRICE_RANGES if lowest <= edge <= highest]
-
-    counts = pd.cut(prices, bins=edges, right=False).value_counts(sort=False)
     labels = []
-    for start, end in zip(edges[:-1], edges[1:]):
+    counts = []
+    for start, end in zip(PRICE_RANGES[:-1], PRICE_RANGES[1:]):  # (0, 50K), (50K, 100K), ...
+        if end <= prices.min() or start > prices.max():
+            continue  # no product of this search can be in this range
+        in_range = (prices >= start) & (prices < end)
         labels.append(f"{short_price(start)}–{short_price(end)}")
-    return {"labels": labels, "counts": counts.tolist()}
+        counts.append(int(in_range.sum()))
+    return {"labels": labels, "counts": counts}
 
 
 def top_brands(df, n=8):

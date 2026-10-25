@@ -6,18 +6,20 @@ import pandas as pd
 from analysis import analyze, flag_prices, price_histogram, price_segments, reference_prices, short_price
 
 
-def make_products(prices, sold=None):
+def make_products(prices):
+    """Products of one search; some have no brand and some are not rated yet."""
     n = len(prices)
+    brands = ["Logitech", "Razer", None, "DareU"]
     return pd.DataFrame({
         "product_id": [str(i) for i in range(n)],
         "name": [f"Chuột Gaming {i}" for i in range(n)],
-        "brand": ["Logitech", "Razer", None, "DareU"] * (n // 4) + [None] * (n % 4),
+        "brand": [brands[i % 4] for i in range(n)],
         "category": "Chuột Chơi Game",
         "price": prices,
         "original_price": prices,
         "discount_pct": 0,
-        "sold": sold if sold is not None else list(range(n)),
-        "rating": [4.8, np.nan] * (n // 2) + [np.nan] * (n % 2),
+        "sold": list(range(n)),
+        "rating": [4.8 if i % 2 == 0 else np.nan for i in range(n)],
         "review_count": 10,
         "image_url": None,
         "product_url": [f"https://tiki.vn/p{i}.html" for i in range(n)],

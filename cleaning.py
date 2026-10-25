@@ -80,7 +80,7 @@ def clean_products(raw, keyword):
     df["discount_pct"] = (100 * (1 - df["price"] / df["original_price"])).round().astype(int)
 
     # 3-4. ratings and brands
-    df["rating"] = df["rating"].where(df["rating"] > 0)
+    df.loc[df["rating"] == 0, "rating"] = None  # None becomes NaN in a number column
     df["brand"] = df["brand"].apply(clean_brand)
 
     # 5. one category
