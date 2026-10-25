@@ -146,41 +146,33 @@
 <section class="section card">
   <div class="card-head"><h2>Nhận xét nhanh</h2><p>tự sinh từ dữ liệu của lần thu thập này</p></div>
   <ol class="insights">
-    {% set n = namespace(i=0) %}
-    {% set n.i = n.i + 1 %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Một sản phẩm trong <strong>{{ scope }}</strong> thường có giá từ <strong>{{ b.q1 | vnd }}</strong> đến <strong>{{ b.q3 | vnd }}</strong>, trung vị {{ b.median | vnd }}.</span></li>
+    <li>Một sản phẩm trong <strong>{{ scope }}</strong> thường có giá từ <strong>{{ b.q1 | vnd }}</strong> đến <strong>{{ b.q3 | vnd }}</strong>, trung vị {{ b.median | vnd }}.</li>
 
     {% if data.sources | length > 1 %}
-    {% set by_median = data.sources | sort(attribute="median") %}{% set n.i = n.i + 1 %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Giá trung vị thấp nhất ở <strong>{{ by_median[0].source }}</strong> ({{ by_median[0].median | vnd }})
-      và cao nhất ở <strong>{{ by_median[-1].source }}</strong> ({{ by_median[-1].median | vnd }}).</span></li>
+    {% set by_median = data.sources | sort(attribute="median") %}
+    <li>Giá trung vị thấp nhất ở <strong>{{ by_median[0].source }}</strong> ({{ by_median[0].median | vnd }})
+      và cao nhất ở <strong>{{ by_median[-1].source }}</strong> ({{ by_median[-1].median | vnd }}).</li>
     {% endif %}
 
     {% set s = data.best_segment %}
-    {% if s and s.gap >= 5 %}{% set n.i = n.i + 1 %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng tới <strong>{{ s.sales_share | number }}% lượt bán</strong>.</span></li>
+    {% if s and s.gap >= 5 %}
+    <li>Phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng tới <strong>{{ s.sales_share | number }}% lượt bán</strong>.</li>
     {% endif %}
 
     {% set s = data.worst_segment %}
-    {% if s and s.gap <= -5 %}{% set n.i = n.i + 1 %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Ngược lại, phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng chỉ <strong>{{ s.sales_share | number }}% lượt bán</strong>{% if s.segment == "budget" %}: rẻ nhất không có nghĩa là bán chạy nhất{% endif %}.</span></li>
+    {% if s and s.gap <= -5 %}
+    <li>Ngược lại, phân khúc <strong>{{ segment_names[s.segment] | lower }}</strong> ({{ s.min_price | compact_vnd }} – {{ s.max_price | compact_vnd }}) chiếm {{ s.listing_share | number }}% số tin đăng nhưng chỉ <strong>{{ s.sales_share | number }}% lượt bán</strong>{% if s.segment == "budget" %}: rẻ nhất không có nghĩa là bán chạy nhất{% endif %}.</li>
     {% endif %}
 
-    {% if data.best_sellers and k.total_sold %}{% set top = data.best_sellers[0] %}{% set n.i = n.i + 1 %}
+    {% if data.best_sellers and k.total_sold %}
+    {% set top = data.best_sellers[0] %}
     {% set top_share = 100 * top.sold / k.total_sold %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>Sản phẩm bán chạy nhất chiếm <strong>{{ top_share | number }}% tổng lượt bán</strong> ({{ top.name | truncate(60) }}, {{ top.price | vnd }}).
+    <li>Sản phẩm bán chạy nhất chiếm <strong>{{ top_share | number }}% tổng lượt bán</strong> ({{ top.name | truncate(60) }}, {{ top.price | vnd }}).
       {% if b.sales_weighted_median and top_share >= 30 %}Vì vậy giá theo lượt bán ({{ b.sales_weighted_median | vnd }}) gần như là giá của một vài sản phẩm bán chạy, không phải mức giá chung mà người mua chấp nhận.
-      {% elif b.sales_weighted_median %}Giá theo lượt bán là {{ b.sales_weighted_median | vnd }}, trung vị niêm yết là {{ b.median | vnd }}.{% endif %}</span></li>
+      {% elif b.sales_weighted_median %}Giá theo lượt bán là {{ b.sales_weighted_median | vnd }}, trung vị niêm yết là {{ b.median | vnd }}.{% endif %}</li>
     {% endif %}
 
-    {% set n.i = n.i + 1 %}
-    <li><span class="i-no">{{ '%02d' % n.i }}</span>
-      <span>{{ k.discount_share | number }}% sản phẩm đang giảm giá{% if k.avg_discount %}, mức giảm trung bình {{ k.avg_discount | number }}%{% endif %}; chỉ {{ k.rated_share | number }}% sản phẩm đã có đánh giá.</span></li>
+    <li>{{ k.discount_share | number }}% sản phẩm đang giảm giá{% if k.avg_discount %}, mức giảm trung bình {{ k.avg_discount | number }}%{% endif %}; chỉ {{ k.rated_share | number }}% sản phẩm đã có đánh giá.</li>
   </ol>
 </section>
 

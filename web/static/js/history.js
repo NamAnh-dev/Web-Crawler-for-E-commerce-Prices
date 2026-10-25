@@ -18,36 +18,23 @@ new Chart(document.getElementById("history-chart"), {
     datasets: [
       // Q3 is filled down to Q1 ("+1" = the next dataset): the common price range
       { label: "Q3", data: series("q3"), borderWidth: 0, pointRadius: 0, fill: "+1",
-        backgroundColor: token("--accent") + "26" },
+        backgroundColor: token("--accent") + "26" },  // "26" = 15 % opacity
       { label: "Q1", data: series("q1"), borderWidth: 0, pointRadius: 0, fill: false },
-      { label: "Giá trung vị", data: series("median"), borderColor: token("--accent"), borderWidth: 2,
-        pointRadius: 4, pointBackgroundColor: token("--accent"), pointBorderColor: token("--surface"), pointBorderWidth: 2 },
-      { label: "Giá sàn", data: series("floor"), borderColor: token("--ink-2"), borderWidth: 1.5, pointRadius: 0 },
+      { label: "Giá trung vị", data: series("median"), borderColor: token("--accent"), backgroundColor: token("--accent") },
+      { label: "Giá sàn", data: series("floor"), borderColor: token("--ink-2"), pointRadius: 0 },
     ],
   },
   options: {
     maintainAspectRatio: false,
     animation: false,
-    interaction: { mode: "index", intersect: false },
+    interaction: { mode: "index", intersect: false },  // the tooltip lists every line for one date
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: token("--surface"),
-        titleColor: token("--ink-2"),
-        bodyColor: token("--ink"),
-        borderColor: token("--border"),
-        borderWidth: 1,
-        padding: 10,
-        callbacks: { label: (item) => `${item.dataset.label}: ${compactVnd(item.raw)}` },
-      },
+      legend: { display: false },  // the page shows its own legend above the chart
+      tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${compactVnd(item.raw)}` } },
     },
     scales: {
-      x: { grid: { display: false }, border: { color: token("--axis") }, ticks: { color: token("--ink-2"), font: { size: 11 } } },
-      y: {
-        grid: { color: token("--grid") },
-        border: { display: false },
-        ticks: { color: token("--ink-2"), font: { size: 11 }, callback: (value) => compactVnd(value) },
-      },
+      x: { grid: { display: false }, ticks: { color: token("--ink-2") } },
+      y: { grid: { color: token("--grid") }, ticks: { color: token("--ink-2"), callback: (value) => compactVnd(value) } },
     },
   },
 });

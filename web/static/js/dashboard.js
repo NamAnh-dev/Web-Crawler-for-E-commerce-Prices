@@ -29,33 +29,13 @@ const colors = centers.map((c) => (c >= band.q1 && c <= band.q3 ? token("--accen
 
 new Chart(document.getElementById("price-chart"), {
   type: "bar",
-  data: {
-    labels,
-    datasets: [{
-      data: counts,
-      backgroundColor: colors,
-      hoverBackgroundColor: colors,
-      borderRadius: { topLeft: 4, topRight: 4 },
-      borderSkipped: "bottom",
-      categoryPercentage: 0.92,
-      barPercentage: 1,
-    }],
-  },
+  data: { labels, datasets: [{ data: counts, backgroundColor: colors }] },
   options: {
     maintainAspectRatio: false,
     animation: false,
     plugins: {
-      legend: { display: false },
+      legend: { display: false },  // the page shows its own legend above the chart
       tooltip: {
-        backgroundColor: token("--surface"),
-        titleColor: token("--ink-2"),
-        bodyColor: token("--ink"),
-        borderColor: token("--border"),
-        borderWidth: 1,
-        padding: 10,
-        displayColors: false,
-        titleFont: { weight: "500" },
-        bodyFont: { weight: "600", size: 14 },
         callbacks: {
           title: (items) => `Giá ${items[0].label}`,
           label: (item) => `${item.raw} sản phẩm`,
@@ -63,17 +43,8 @@ new Chart(document.getElementById("price-chart"), {
       },
     },
     scales: {
-      x: {
-        grid: { display: false },
-        border: { color: token("--axis") },
-        ticks: { color: token("--ink-2"), font: { size: 11 }, maxRotation: 0, autoSkip: true, autoSkipPadding: 12 },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: token("--grid") },
-        border: { display: false },
-        ticks: { color: token("--ink-2"), font: { size: 11 }, precision: 0 },
-      },
+      x: { grid: { display: false }, ticks: { color: token("--ink-2"), maxRotation: 0 } },
+      y: { beginAtZero: true, grid: { color: token("--grid") }, ticks: { color: token("--ink-2"), precision: 0 } },
     },
   },
 });
