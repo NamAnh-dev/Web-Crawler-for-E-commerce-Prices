@@ -10,9 +10,7 @@ Type a product name. EcomCheck collects up to 200 products from **Tiki**, cleans
 
 ![Home page](docs/screenshots/home.png)
 
-| Result page | On a phone |
-|---|---|
-| ![Result page](docs/screenshots/result.png) | ![Phone](docs/screenshots/mobile.png) |
+![Result page](docs/screenshots/result.png)
 
 ## What I practised
 
