@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from analysis.pricing import (add_analysis_columns, adjusted_rating, build_dashboard,
-                              flag_prices, price_band, weighted_median)
+                              flag_prices, price_band, source_comparison, weighted_median)
 
 NORMAL_PRICES = [100_000, 120_000, 150_000, 180_000, 200_000, 220_000, 250_000, 300_000]
 
@@ -96,3 +96,10 @@ def test_build_dashboard_runs_on_a_normal_category():
     assert data["kpis"]["products"] == 8
     assert len(data["segments"]) == 3
     assert sum(data["histogram"]["counts"]) + data["histogram"]["tail"] == 8
+
+
+def test_source_comparison():
+    df = make_products(NORMAL_PRICES).assign(price_flag="normal")
+    df.loc[:3, "source"] = "Shopee"
+    assert [row["source"] for row in source_comparison(df)] == ["Tiki", "Shopee"]   # Tiki first
+    assert source_comparison(df.assign(price_flag="high")) == []   # no normal price anywhere
