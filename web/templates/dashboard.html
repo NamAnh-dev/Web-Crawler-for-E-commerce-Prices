@@ -32,7 +32,7 @@
 <section class="hero-panel on-dark">
   <div>
     <p class="hero-figure-label">Giá sàn tham khảo · {{ scope }}</p>
-    <p class="hero-figure">{{ ui.count(b.floor, suffix=" ₫") }}</p>
+    <p class="hero-figure">{{ b.floor | vnd }}</p>
     <p class="hero-note">
       90% sản phẩm có giá bình thường được bán từ mức này trở lên.
       Một tin rao rẻ hơn nhiều so với mức này nên được kiểm tra kỹ.
@@ -55,37 +55,37 @@
 <section class="kpis" aria-label="Chỉ số chính">
   <div class="kpi">
     <p class="kpi-label">Sản phẩm phân tích</p>
-    <p class="kpi-value">{{ ui.count(k.products) }}</p>
+    <p class="kpi-value">{{ k.products | number }}</p>
     <p class="kpi-note">{{ k.sellers }} người bán · {{ k.brands }} thương hiệu</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Giá trung vị</p>
-    <p class="kpi-value">{{ ui.count(b.median, suffix=" ₫") }}</p>
+    <p class="kpi-value">{{ b.median | vnd }}</p>
     <p class="kpi-note">phổ biến {{ b.q1 | compact_vnd }} – {{ b.q3 | compact_vnd }}</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Giá theo lượt bán</p>
-    <p class="kpi-value">{{ ui.count(b.sales_weighted_median, suffix=" ₫") if b.sales_weighted_median else "–" }}</p>
+    <p class="kpi-value">{{ b.sales_weighted_median | vnd }}</p>
     <p class="kpi-note">trung vị tính theo số lượng đã bán</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Tổng lượt bán</p>
-    <p class="kpi-value">{{ ui.count(k.total_sold) }}</p>
+    <p class="kpi-value">{{ k.total_sold | number }}</p>
     <p class="kpi-note">cộng dồn theo số liệu của sàn</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Đang giảm giá</p>
-    <p class="kpi-value">{{ ui.count(k.discount_share, decimals=1, suffix="%") }}</p>
+    <p class="kpi-value">{{ k.discount_share | number(1) }}%</p>
     <p class="kpi-note">{% if k.avg_discount %}mức giảm trung bình {{ k.avg_discount | number }}%{% else %}không có sản phẩm giảm giá{% endif %}</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Có đánh giá</p>
-    <p class="kpi-value">{{ ui.count(k.rated_share, decimals=1, suffix="%") }}</p>
+    <p class="kpi-value">{{ k.rated_share | number(1) }}%</p>
     <p class="kpi-note">điểm trung bình {{ k.avg_rating | number(1) }} / 5</p>
   </div>
   <div class="kpi">
     <p class="kpi-label">Giá bất thường</p>
-    <p class="kpi-value">{{ ui.count(k.unusual) }}</p>
+    <p class="kpi-value">{{ k.unusual | number }}</p>
     <p class="kpi-note">không tính vào thống kê giá</p>
   </div>
   <div class="kpi">

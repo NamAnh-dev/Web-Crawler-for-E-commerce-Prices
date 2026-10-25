@@ -39,7 +39,7 @@
         <span class="preview-keyword">{{ latest.keyword }}</span>
       </div>
       <p class="preview-label">Giá sàn tham khảo · {{ s.category }}</p>
-      <p class="preview-figure">{{ ui.count(s.band.floor, suffix=" ₫") }}</p>
+      <p class="preview-figure">{{ s.band.floor | vnd }}</p>
       {{ ui.price_line(s.band, s.pos) }}
       <div class="preview-stats">
         <div><span>Trung vị</span><strong>{{ s.band.median | compact_vnd }}</strong></div>
@@ -56,9 +56,9 @@
 {% block content %}
 {% if totals.runs %}
 <section class="totals" aria-label="Tổng quan dữ liệu">
-  <div><strong>{{ ui.count(totals.products) }}</strong><span>sản phẩm đã thu thập và phân tích</span></div>
-  <div><strong>{{ ui.count(totals.runs) }}</strong><span>lần thu thập dữ liệu</span></div>
-  <div><strong>{{ ui.count(totals.keywords) }}</strong><span>từ khóa sản phẩm</span></div>
+  <div><strong>{{ totals.products | number }}</strong><span>sản phẩm đã thu thập và phân tích</span></div>
+  <div><strong>{{ totals.runs | number }}</strong><span>lần thu thập dữ liệu</span></div>
+  <div><strong>{{ totals.keywords | number }}</strong><span>từ khóa sản phẩm</span></div>
 </section>
 {% endif %}
 

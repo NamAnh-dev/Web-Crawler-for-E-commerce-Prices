@@ -17,9 +17,3 @@
   {% endif %}
 </div>
 {% endmacro %}
-
-{# A number that counts up when the page opens (see static/js/count-up.js).
-   The final value is already in the HTML, so it also works without JavaScript. #}
-{% macro count(value, decimals=0, suffix="") %}
-<span data-count="{{ value }}" data-decimals="{{ decimals }}" data-suffix="{{ suffix }}">{{ value | number(decimals) }}{{ suffix }}</span>
-{%- endmacro %}
