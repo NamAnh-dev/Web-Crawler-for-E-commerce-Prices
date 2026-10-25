@@ -29,9 +29,13 @@ def normalize_text(text):
 
 
 def matches_keyword(name, keyword):
-    """True if every word of the keyword appears in the product name."""
-    name = normalize_text(name)
-    return all(word in name for word in normalize_text(keyword).split())
+    """True if every word of the keyword is a whole word of the product name.
+
+    Whole words, not substrings: the keyword "tai nghe" must not match a name
+    containing "detail" just because "tai" is inside it.
+    """
+    name_words = set(normalize_text(name).split())
+    return all(word in name_words for word in normalize_text(keyword).split())
 
 
 def parse_sold(value):

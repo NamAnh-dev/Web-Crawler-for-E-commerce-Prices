@@ -26,6 +26,12 @@ def test_matches_keyword_needs_every_word():
     assert not matches_keyword("Chuột văn phòng Logitech", "chuột gaming")
 
 
+def test_matches_keyword_uses_whole_words():
+    assert matches_keyword("Tai Nghe Bluetooth Sony", "tai nghe")
+    assert not matches_keyword("Detail nghe nhạc", "tai nghe")    # "tai" is only inside "detail"
+    assert not matches_keyword("Cáp tail light", "tai nghe")
+
+
 @pytest.mark.parametrize("value, expected", [
     (4757, 4757),
     ("1.2K sold", 1200),    # was parsed as 1 in version 1
