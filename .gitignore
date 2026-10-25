@@ -31,3 +31,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Personal interview notes, kept out of the repository
+STUDY_NOTES.md
