@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block body_class %}page-home{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+    <span class="grid-lines"></span>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="hero-text">
+      <span class="eyebrow reveal"><span class="pulse-dot"></span> Dữ liệu thật, lấy trực tiếp từ Tiki</span>
+      <h1 class="reveal" style="--i: 1">Giá bao nhiêu là <span class="gradient-text">hợp lý</span>?</h1>
+      <p class="lead reveal" style="--i: 2">
+        Nhập tên một sản phẩm. EcomCheck thu thập tới 200 sản phẩm trên Tiki, làm sạch dữ liệu
+        và cho bạn biết <strong>giá sàn tham khảo</strong>, <strong>khoảng giá phổ biến</strong>
+        và <strong>phân khúc bán chạy</strong>.
+      </p>
+
+      <form class="search reveal" style="--i: 3" method="post" action="{{ url_for('search') }}" data-loading>
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" name="keyword" id="keyword" placeholder="Ví dụ: chuột gaming" minlength="2" required autocomplete="off" aria-label="Tên sản phẩm">
+        <button type="submit" class="btn btn-primary">
+          Phân tích
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+
+      <div class="chips reveal" style="--i: 4">
+        <span>Thử ngay:</span>
+        {% for example in ["chuột gaming", "tai nghe bluetooth", "nồi chiên không dầu", "bàn phím cơ"] %}
+          <button type="button" class="chip" data-keyword="{{ example }}">{{ example }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Decorative preview of the result page (no real numbers) #}
+    <div class="hero-visual reveal" style="--i: 2" aria-hidden="true">
+      <div class="preview-card tilt">
+        <div class="preview-head">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="preview-title">Phân bố giá</span>
+        </div>
+        <div class="preview-bars">
+          {% for height in [28, 46, 72, 100, 84, 58, 36, 22, 14] %}
+            <span style="--h: {{ height }}%; --i: {{ loop.index }}"></span>
+          {% endfor %}
+        </div>
+        <div class="preview-range">
+          <span class="preview-band"></span>
+          <span class="preview-marker m-floor">Giá sàn</span>
+          <span class="preview-marker m-median">Trung vị</span>
+        </div>
+      </div>
+      <div class="float-badge badge-a"><span class="badge-icon">↓</span> Giá sàn P10</div>
+      <div class="float-badge badge-b"><span class="badge-icon">◎</span> Khoảng Q1–Q3</div>
+      <div class="float-badge badge-c"><span class="badge-icon">!</span> Giá bất thường</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container" id="how">
+  <div class="section-head reveal">
+    <span class="kicker">Cách hoạt động</span>
+    <h2>Từ một từ khóa đến một bản phân tích giá</h2>
+  </div>
+  <div class="steps">
+    {% set steps = [
+      ("Thu thập", "Gọi API tìm kiếm công khai của Tiki bằng requests: 5 trang, 40 sản phẩm mỗi trang, nghỉ 1 giây giữa hai trang.", "requests · JSON"),
+      ("Làm sạch", "Bỏ dòng thiếu giá hoặc trùng lặp, rating 0 nghĩa là chưa có đánh giá, chỉ giữ danh mục chính của từ khóa.", "pandas"),
+      ("Phân tích", "Loại giá bất thường bằng IQR trên log(giá), rồi tính giá sàn (P10), trung vị và khoảng Q1–Q3.", "pandas · numpy"),
+      ("Hiển thị", "Lưu mỗi lần tìm vào SQLite và trình bày bằng Flask: biểu đồ, gợi ý mua, bảng sản phẩm, file CSV.", "SQLite · Flask"),
+    ] %}
+    {% for title, text, tools in steps %}
+      <article class="step card glow reveal" style="--i: {{ loop.index }}">
+        <span class="step-number">0{{ loop.index }}</span>
+        <h3>{{ title }}</h3>
+        <p>{{ text }}</p>
+        <span class="step-tools">{{ tools }}</span>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section container">
+  <div class="section-head reveal">
+    <span class="kicker">Lịch sử</span>
+    <h2>Tìm kiếm gần đây</h2>
+  </div>
+  {% if searches %}
+    <div class="recent-grid">
+      {% for s in searches %}
+        <a class="recent card glow reveal" style="--i: {{ loop.index }}" href="{{ url_for('result', search_id=s.id) }}">
+          <div class="recent-top">
+            <span class="recent-keyword">{{ s.keyword }}</span>
+            <span class="recent-arrow" aria-hidden="true">→</span>
+          </div>
+          <span class="recent-category">{{ s.category }}</span>
+          <div class="recent-stats">
+            <span><strong>{{ s.products }}</strong> sản phẩm</span>
+            <span><strong>{{ s.min_price | short_price }} – {{ s.max_price | short_price }}</strong></span>
+          </div>
+          <span class="recent-time">{{ s.created_at }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty card reveal">
+      <span class="empty-icon" aria-hidden="true">🔍</span>
+      <p>Chưa có tìm kiếm nào. Hãy thử một từ khóa ở trên!</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

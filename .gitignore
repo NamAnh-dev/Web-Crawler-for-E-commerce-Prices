@@ -1,23 +1,21 @@
 # Python / virtual env
 venv/
-env/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ipynb_checkpoints/
 
-# Secrets and local settings (copy .env.example to .env)
+# Local data: the database is re-created automatically, CSV files come from scraper.py
+data/*.db
+data/*.csv
+!data/tiki_sample.csv
+
+# Secrets and personal files (never commit passwords or cookies)
 .env
 PassShopee.txt
 Ngrok.txt
-
-# Local database (re-created automatically; sample data lives in data/sample/)
-data/*.db
-data/*.db-journal
-
-# Files saved from your browser (may contain personal data) and collection logs
-*.har
-data/raw/
-logs/
+STUDY_NOTES.md
+*.log
 
 # Editors / OS
 .claude/
@@ -25,12 +23,3 @@ logs/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Logs
-*.log
-
-# Personal interview notes, kept out of the repository
-STUDY_NOTES.md

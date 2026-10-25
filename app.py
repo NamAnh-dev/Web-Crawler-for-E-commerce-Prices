@@ -1,222 +1,85 @@
-"""EcomCheck web app (Flask).
+"""Step 5 - Show: a small Flask web app on top of the four steps.
 
-Run:
-    python app.py
-then open http://127.0.0.1:5000
+    python app.py      then open http://127.0.0.1:5000
 """
-import math
-from datetime import datetime
+import os
 
+import requests
 from flask import Flask, Response, abort, flash, redirect, render_template, request, url_for
 
-import config
-from analysis.cleaning import normalize_text
-from analysis.history import build_history
-from analysis.pricing import build_dashboard, main_category, summarize
-from database import db
-from run_crawl import import_files, run_pipeline
+import database
+import scraper
+from analysis import analyze, short_price
+from cleaning import clean_products, normalize_text
 
-PER_PAGE = 20
-
-app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
-app.config["SECRET_KEY"] = config.SECRET_KEY
-app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # HAR files can be large
-db.init_db()
-
-
-# --- Number formats used in Vietnam (1.234.567 ₫, 4,8) ---------------------------
-
-def is_missing(value):
-    return value is None or (isinstance(value, float) and math.isnan(value))
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only")  # needed by flash() messages
+database.init_db()
 
 
 @app.template_filter("number")
-def format_number(value, decimals=0):
-    if is_missing(value):
-        return "–"
-    text = f"{value:,.{decimals}f}"                       # 1,234.5
-    return text.replace(",", " ").replace(".", ",").replace(" ", ".")  # 1.234,5
+def format_number(value):
+    """1234567 -> "1.234.567" (Vietnam uses dots between thousands)."""
+    return f"{value:,.0f}".replace(",", ".")
 
 
 @app.template_filter("vnd")
 def format_vnd(value):
-    return "–" if is_missing(value) else f"{format_number(value)} ₫"
+    return format_number(value) + " ₫"
 
 
-@app.template_filter("compact_vnd")
-def format_compact_vnd(value):
-    """Short price for tight spaces: 85K, 1,5Tr."""
-    if is_missing(value):
-        return "–"
-    if value >= 1_000_000:
-        return f"{format_number(value / 1_000_000, 1).removesuffix(',0')}Tr"
-    return f"{format_number(value / 1_000)}K"
+app.add_template_filter(short_price, "short_price")
 
-
-@app.template_filter("datetime_vn")
-def format_datetime(value):
-    moment = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-    return moment.strftime("%H:%M · %d/%m/%Y")
-
-
-@app.template_global()
-def url_with(**changes):
-    """The current URL with some query parameters changed (used by pagination)."""
-    args = request.args.to_dict()
-    args.update(changes)
-    return url_for(request.endpoint, **request.view_args, **args)
-
-
-def run_context(run):
-    """What the shared header of every run page needs."""
-    return {"run": run, "sources": db.run_sources(run["id"]), "snapshots": db.count_runs(run["keyword"])}
-
-
-def get_run_or_404(run_id):
-    run = db.get_run(run_id)
-    if run is None:
-        abort(404)
-    return run
-
-
-# --- Pages -----------------------------------------------------------------------
 
 @app.route("/")
-def home():
-    runs = db.recent_runs(6)
-    for run in runs:  # reference prices shown on each card
-        run["summary"] = summarize(db.load_products(run["id"]))
-    return render_template("home.html", runs=runs, totals=db.totals())
+def index():
+    return render_template("index.html", searches=database.recent_searches())
 
 
 @app.route("/search", methods=["POST"])
 def search():
-    keyword = " ".join(request.form.get("keyword", "").split())  # trim extra spaces
+    """Collect -> clean -> save, then show the result page."""
+    keyword = request.form.get("keyword", "").strip()
     if len(keyword) < 2:
         flash("Hãy nhập tên sản phẩm (ít nhất 2 ký tự).")
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
 
-    # Re-use a fresh search for the same keyword instead of crawling again.
-    recent = db.find_recent_run(keyword, config.CACHE_MINUTES)
     try:
-        run_id = recent["id"] if recent else run_pipeline(keyword)
-    except Exception as error:  # network problem or rate limit
+        raw = scraper.crawl(keyword)
+    except (requests.RequestException, RuntimeError) as error:  # no internet, Tiki busy...
         flash(f"Không lấy được dữ liệu từ Tiki: {error}")
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
 
-    if run_id is None:
+    products = clean_products(raw, keyword)
+    if products.empty:
         flash(f"Không tìm thấy sản phẩm phù hợp với “{keyword}”. Hãy thử từ khóa khác.")
-        return redirect(url_for("home"))
-    return redirect(url_for("products", run_id=run_id))
+        return redirect(url_for("index"))
+
+    search_id = database.save_search(keyword, products)
+    return redirect(url_for("result", search_id=search_id))
 
 
-@app.route("/run/<int:run_id>")
-def products(run_id):
-    run = get_run_or_404(run_id)
-    categories = db.run_categories(run_id)
-    filters = {
-        "q": request.args.get("q", "").strip(),
-        # biggest category by default (same as the dashboard); "" = all categories
-        "category": request.args.get("category", categories[0]["category"]),
-        "source": request.args.get("source", ""),
-        "min_price": request.args.get("min_price", type=int),
-        "max_price": request.args.get("max_price", type=int),
-        "min_sold": request.args.get("min_sold", type=int),
-        "min_rating": request.args.get("min_rating", type=float),
-        "sort": request.args.get("sort", "deal"),
-    }
-    page = max(request.args.get("page", 1, type=int), 1)
-    rows, total = db.search_products(run_id, **filters, page=page, per_page=PER_PAGE)
-    pages = max(math.ceil(total / PER_PAGE), 1)
-    if page > pages:  # e.g. an old link to page 9 after the filters changed
-        return redirect(url_with(page=pages))
-
-    return render_template(
-        "results.html",
-        **run_context(run),
-        products=rows,
-        total=total,
-        page=page,
-        pages=pages,
-        filters=filters,
-        categories=categories,
-    )
-
-
-@app.route("/run/<int:run_id>/dashboard")
-def dashboard(run_id):
-    run = get_run_or_404(run_id)
-    categories = db.run_categories(run_id)
-    # Analyse one category at a time (the biggest one by default), so that
-    # e.g. mouse pads do not pull down the price of gaming mice.
-    category = request.args.get("category") or categories[0]["category"]
-
-    df = db.load_products(run_id)
-    if category != "all":
-        df = df[df["category"] == category]
-    if df.empty:
+@app.route("/result/<int:search_id>")
+def result(search_id):
+    search = database.get_search(search_id)
+    if search is None:
         abort(404)
-
-    return render_template("dashboard.html", **run_context(run), data=build_dashboard(df),
-                           categories=categories, category=category)
-
-
-@app.route("/run/<int:run_id>/import", methods=["GET", "POST"])
-def import_data(run_id):
-    """Add Lazada/Shopee results that the user saved from their own browser."""
-    run = get_run_or_404(run_id)
-    if request.method == "GET":
-        return render_template("import.html", **run_context(run))
-
-    files = [(f.filename, f.read()) for f in request.files.getlist("files") if f.filename]
-    try:
-        added = import_files(run_id, files)
-    except ValueError:  # not a valid HAR/JSON file
-        added = {}
-
-    if not added:
-        flash("Không tìm thấy sản phẩm Lazada hoặc Shopee phù hợp trong file. "
-              "Hãy mở DevTools trước khi tìm kiếm, rồi xuất lại file HAR.")
-        return redirect(url_for("import_data", run_id=run_id))
-
-    flash("Đã thêm " + ", ".join(f"{count} sản phẩm {source}" for source, count in added.items()) + ".")
-    return redirect(url_for("dashboard", run_id=run_id))
+    report = analyze(database.load_products(search_id))
+    return render_template("result.html", search=search, report=report)
 
 
-@app.route("/history")
-def history():
-    keyword = request.args.get("keyword", "")
-    data = db.load_history(keyword)
-    data = data[data["source"] == "Tiki"]  # only Tiki is collected every day
-    if data.empty:
+@app.route("/result/<int:search_id>/csv")
+def download_csv(search_id):
+    search = database.get_search(search_id)
+    if search is None:
         abort(404)
-
-    latest = data[data["run_id"] == data["run_id"].max()]
-    category = request.args.get("category") or main_category(latest)
-    if not (data["category"] == category).any():
-        abort(404)
-    counts = latest["category"].value_counts()
-
-    return render_template("history.html", **run_context(db.get_run(int(latest["run_id"].iloc[0]))),
-                           category=category, categories=counts[counts >= 3].index.tolist(),
-                           history=build_history(data, category))
-
-
-@app.route("/run/<int:run_id>/export.csv")
-def export_csv(run_id):
-    run = get_run_or_404(run_id)
-    df = db.load_products(run_id).drop(columns=["id", "run_id"])
-    filename = f"ecomcheck_{normalize_text(run['keyword']).replace(' ', '-')}_{run_id}.csv"
+    products = database.load_products(search_id).drop(columns="search_id")
+    filename = f"tiki_{normalize_text(search['keyword']).replace(' ', '_')}_{search_id}.csv"
     return Response(
-        df.to_csv(index=False).encode("utf-8-sig"),  # BOM so Excel shows Vietnamese correctly
+        products.to_csv(index=False).encode("utf-8-sig"),  # utf-8-sig: Excel shows Vietnamese correctly
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html")
 
 
 @app.errorhandler(404)
@@ -224,11 +87,5 @@ def not_found(error):
     return render_template("404.html"), 404
 
 
-@app.errorhandler(413)
-def file_too_large(error):
-    flash("File quá lớn (tối đa 300 MB). Khi xuất HAR, hãy lọc tab Network theo Fetch/XHR và Doc.")
-    return redirect(request.referrer or url_for("home"))
-
-
 if __name__ == "__main__":
-    app.run(debug=config.DEBUG)
+    app.run()
