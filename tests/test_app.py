@@ -56,6 +56,12 @@ def test_unknown_run_is_404(client):
     assert client.get("/run/999").status_code == 404
 
 
+def test_page_after_the_last_one_goes_to_the_last_page(client):
+    response = client.get("/run/1?page=99&sort=price_asc")
+    assert response.status_code == 302
+    assert "page=1" in response.headers["Location"] and "sort=price_asc" in response.headers["Location"]
+
+
 def test_filters_are_applied_in_sql(client):
     rows, total = db.search_products(1, min_price=200_000, sort="price_asc")
     assert total == 4
