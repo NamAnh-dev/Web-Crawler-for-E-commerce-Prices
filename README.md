@@ -1,6 +1,8 @@
 # EcomCheck — what is a fair price on a Vietnamese marketplace?
 
-EcomCheck is an end-to-end data project. For any product keyword it **collects** the listings from Tiki's public search API (and Lazada/Shopee results you save from your own browser), **cleans** them, **analyses** the prices — a reference *floor price*, the common price range, unusual prices, which price segment actually sells, a transparent *deal score*, a comparison between marketplaces and the price history built by a daily collection — and **presents** the results in a Flask web app, a CSV export and two Jupyter notebooks.
+*Self-directed project built during my Data Collection internship at POS365 (2025), under my mentor's guidance, to learn web scraping, Flask and data analysis. Rebuilt in 2026 after reviewing my own code (see [Version 2](#version-2-what-i-fixed-after-reviewing-version-1)).*
+
+EcomCheck is an end-to-end data project. For any product keyword it **collects** the listings from Tiki's public search API (and Lazada/Shopee results you save from your own browser), **cleans** them, **analyses** the prices — a reference *floor price*, the common price range, unusual prices, which price segment actually sells, a transparent *deal score*, a comparison between marketplaces and the price history built by a daily collection — and **presents** the results in a Flask web app, a CSV export and Jupyter notebooks.
 
 ![Home](docs/screenshots/home.png)
 
@@ -12,7 +14,8 @@ EcomCheck is an end-to-end data project. For any product keyword it **collects**
 
 | Skill | Where to look |
 |---|---|
-| **Data collection** from a JSON API: pagination, timeouts, pauses between requests, back-off when rate limited, robots.txt check | [`crawler/tiki.py`](crawler/tiki.py), [`notebooks/01_data_collection.ipynb`](notebooks/01_data_collection.ipynb) |
+| **Data collection** from a JSON API: pagination, timeouts, pauses between requests, back-off on HTTP 429/503; robots.txt checked in notebook 01 | [`crawler/tiki.py`](crawler/tiki.py), [`notebooks/01_data_collection.ipynb`](notebooks/01_data_collection.ipynb) |
+| **HTML scraping** with Selenium + BeautifulSoup: headless Chrome, explicit waits, scrolling, CSS selectors, tested offline on a saved page, and compared with the JSON API (a learning comparison, not part of the pipeline) | [`crawler/tiki_html.py`](crawler/tiki_html.py), [`notebooks/00_scraping_methods.ipynb`](notebooks/00_scraping_methods.ipynb) |
 | **Reading network traffic**: extracting Lazada/Shopee search results from a browser HAR export, without bypassing their anti-bot protection | [`crawler/browser_import.py`](crawler/browser_import.py) |
 | **Automation**: daily batch collection with logging, scheduled with the Windows Task Scheduler | [`collect.py`](collect.py), [`schedule_daily.ps1`](schedule_daily.ps1) |
 | **Data cleaning & validation**: text normalisation for Vietnamese, parsing "1.2K sold", relevance filtering, data-quality checks | [`analysis/cleaning.py`](analysis/cleaning.py), [`tests/`](tests) |
@@ -33,17 +36,22 @@ flowchart LR
     E --> F["Flask web app"]
     E --> H["analysis/history.py<br/>price history"]
     E --> G["CSV export"]
+    S["tiki.vn/search page<br/>drawn by JavaScript"] -.->|"learning / comparison only"| T["crawler/tiki_html.py<br/>Selenium + BeautifulSoup"]
+    T -.-> N["notebooks/00<br/>HTML vs JSON API"]
 ```
 
+Dotted lines: the HTML scraper is kept to compare both methods; the pipeline itself uses the JSON API.
+
 1. **Collect**
-   - **Tiki:** `tiki.vn/api/v2/products`, the endpoint the website itself calls. No login, allowed by robots.txt, a pause between pages, back-off when rate limited, results re-used for 30 minutes. A web search takes 5 pages (200 products); `collect.py` takes 20 pages per keyword for every keyword in `keywords.txt`, and can run every day.
+   - **Tiki:** `tiki.vn/api/v2/products`, the endpoint the website itself calls. No login, allowed by robots.txt, a pause between pages, back-off when rate limited (HTTP 429/503, or an HTML page instead of JSON), results re-used for 30 minutes. A web search takes 5 pages (200 products); `collect.py` takes 20 pages per keyword for every keyword in `keywords.txt`, and can run every day.
+   - **HTML scraping (comparison only):** `crawler/tiki_html.py` opens the search page in headless Chrome with Selenium and reads the product cards with BeautifulSoup. Notebook 00 runs it next to the API on the same page: the same 40 products with the same prices, but over 10 s instead of under 1 s, and 4 of the 13 columns are missing (category, seller, original price, review count). That is why the pipeline uses the API.
    - **Lazada and Shopee** block automated requests (anti-bot page, HTTP 403), so the app never calls them. You search on their websites as usual, export the network log (HAR) from DevTools and upload it; the app reads only the search responses inside it.
 2. **Clean** — drop rows without a price or link, remove duplicates, fix discounts, treat a 0-star rating as *not rated*, and keep only products relevant to the keyword (name match **or** the main category of the exact matches). Lazada and Shopee send no category name, so their products (whose names contain the keyword) are put in the main category of the search.
 3. **Analyse** — inside each category (so mouse pads never pull down the price of gaming mice):
    - **Unusual prices**: Tukey's IQR rule on `log10(price)`, because prices are right-skewed.
    - **Floor price** (*giá sàn tham khảo*): the 10th percentile of normal prices — 90 % of listings cost more.
    - **Common range**: Q1–Q3. **Sales-weighted median**: the median price of the units sold, shown with the best seller's share of units because one product often decides it.
-   - **Deal score (0–100)**: `0.3 × cheap rank + 0.4 × sold rank + 0.3 × rating rank`, with ratings adjusted by a Bayesian average so that 5★ from one review does not beat 4.8★ from a thousand.
+   - **Deal score (0–100)**: `0.3 × cheap rank + 0.4 × sold rank + 0.3 × rating rank`, with ratings adjusted by a Bayesian average (pulled toward the category's average) so that 5★ from one review does not beat 4.8★ from a thousand.
    - **Marketplace comparison**: floor price, common range and sales-weighted median per marketplace, on one price line.
    - **Price history** (from the daily snapshots): the *like-for-like* price change of products present in every snapshot — the market median can move just because the product mix changed — and units actually sold between two snapshots (`sold` is cumulative).
 4. **Present** — product list with filters and sorting done in SQL, a dashboard per category, auto-generated insights, CSV download, and a page that explains every formula.
@@ -91,8 +99,9 @@ pip install -r requirements.txt
 | Collect every keyword of `keywords.txt` (20 pages each, ~2 min per keyword) | `python collect.py` |
 | Run `collect.py` every day at 08:00 (Windows) | `.\schedule_daily.ps1 -At 08:00` |
 | Stop the daily collection | `.\schedule_daily.ps1 -Remove` |
-| Run the tests (no internet needed) | `pytest` |
-| Open the notebooks | `jupyter notebook notebooks/` |
+| Run the tests (no internet or Chrome needed) | `pytest` |
+| Open the notebooks (notebook 01 keeps the saved sample unless you set `REBUILD_SAMPLE = True`) | `jupyter notebook notebooks/` |
+| Run notebook 00 from the terminal: **needs Google Chrome**; Selenium fetches a matching chromedriver the first time | `jupyter nbconvert --to notebook --execute --inplace notebooks/00_scraping_methods.ipynb` |
 
 **Adding Lazada and Shopee:** open a search result in the web app and click **Thêm Lazada, Shopee**. The page explains the steps: open DevTools (F12) → Network → tick *Preserve log*, search on lazada.vn or shopee.vn (logged in, as usual) and go through a few result pages, then *Export HAR (sanitized)* and upload the file. HAR files stay on your computer: they are ignored by git.
 
@@ -108,6 +117,7 @@ Settings (pages per search, pause between requests, database path…) can be cha
 ├── config.py               settings, read from .env
 ├── crawler/
 │   ├── tiki.py             Extract: Tiki public search API
+│   ├── tiki_html.py        comparison only: Selenium + BeautifulSoup on the rendered search page
 │   ├── browser_import.py   Extract: search responses inside a HAR / JSON / HTML file
 │   ├── lazada.py           parse Lazada search results
 │   └── shopee.py           parse Shopee search results
@@ -122,11 +132,13 @@ Settings (pages per search, pause between requests, database path…) can be cha
 │   ├── templates/          Jinja pages: home, products, dashboard, import, history, method
 │   └── static/             CSS (light + dark), Chart.js scripts
 ├── notebooks/
-│   ├── 01_data_collection.ipynb
-│   └── 02_price_analysis.ipynb
+│   ├── 00_scraping_methods.ipynb   HTML scraping vs JSON API (needs Chrome)
+│   ├── 01_data_collection.ipynb    API, robots.txt, cleaning step by step, builds the sample
+│   └── 02_price_analysis.ipynb     analysis of the sample
 ├── data/sample/            sample dataset used by notebook 02
 ├── docs/                   screenshots and figures
-└── tests/                  pytest: cleaning, pricing, web pages
+└── tests/                  pytest: crawlers, cleaning, pricing, history, web pages;
+                            fixtures/ holds a saved Tiki search page for the HTML parser
 ```
 
 ## Data model
