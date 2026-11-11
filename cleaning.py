@@ -1,12 +1,25 @@
 """Step 2 - Clean: turn the raw rows from scraper.py into a table ready for analysis."""
+
 import re
 import unicodedata
 
 import pandas as pd
 
-# Columns of the clean table, in this order (the same as the database table)
-COLUMNS = ["product_id", "name", "brand", "category", "price", "original_price", "discount_pct",
-           "sold", "rating", "review_count", "image_url", "product_url"]
+# Columns of the clean table, in this order
+COLUMNS = [
+    "product_id",
+    "name",
+    "brand",
+    "category",
+    "price",
+    "original_price",
+    "discount_pct",
+    "sold",
+    "rating",
+    "review_count",
+    "image_url",
+    "product_url",
+]
 
 # Brand values that actually mean "no brand" (after normalize_text)
 NO_BRAND = {"oem", "no brand", "nobrand", "khong thuong hieu"}
@@ -77,7 +90,9 @@ def clean_products(raw, keyword):
     df.loc[no_discount, "original_price"] = df.loc[no_discount, "price"]
     df["price"] = df["price"].astype(int)
     df["original_price"] = df["original_price"].astype(int)
-    df["discount_pct"] = (100 * (1 - df["price"] / df["original_price"])).round().astype(int)
+    df["discount_pct"] = (
+        (100 * (1 - df["price"] / df["original_price"])).round().astype(int)
+    )
 
     # 3-4. ratings and brands
     df.loc[df["rating"] == 0, "rating"] = None  # None becomes NaN in a number column

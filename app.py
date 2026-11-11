@@ -1,20 +1,29 @@
 """Step 5 - Show: a small Flask web app on top of the four steps.
 
-    python app.py      then open http://127.0.0.1:5000
+python app.py      then open http://127.0.0.1:5000
 """
+
 import os
 
 import requests
-from flask import Flask, Response, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 
-import database
 import scraper
+import storage
 from analysis import analyze, short_price
 from cleaning import clean_products, normalize_text
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only")  # needed by flash() messages
-database.init_db()
 
 
 @app.template_filter("number")
@@ -33,7 +42,7 @@ app.add_template_filter(short_price, "short_price")
 
 @app.route("/")
 def index():
-    return render_template("index.html", searches=database.recent_searches())
+    return render_template("index.html", searches=storage.recent_searches())
 
 
 @app.route("/search", methods=["POST"])
@@ -46,7 +55,7 @@ def search():
 
     try:
         raw = scraper.crawl(keyword)
-    except (requests.RequestException, RuntimeError) as error:  # no internet, Tiki busy...
+    except (requests.RequestException, RuntimeError) as error:  # no internet, Tiki busy
         flash(f"Không lấy được dữ liệu từ Tiki: {error}")
         return redirect(url_for("index"))
 
@@ -55,30 +64,33 @@ def search():
         flash(f"Không tìm thấy sản phẩm phù hợp với “{keyword}”. Hãy thử từ khóa khác.")
         return redirect(url_for("index"))
 
-    search_id = database.save_search(keyword, products)
+    search_id = storage.save_search(keyword, products)
     return redirect(url_for("result", search_id=search_id))
 
 
 @app.route("/result/<int:search_id>")
 def result(search_id):
-    search = database.get_search(search_id)
-    if search is None:
+    products = storage.load_search(search_id)
+    if products is None:
         abort(404)
-    report = analyze(database.load_products(search_id))
-    return render_template("result.html", search=search, report=report)
+    return render_template(
+        "result.html",
+        search=storage.search_info(search_id, products),
+        report=analyze(products),
+    )
 
 
 @app.route("/result/<int:search_id>/csv")
 def download_csv(search_id):
-    search = database.get_search(search_id)
-    if search is None:
+    products = storage.load_search(search_id)
+    if products is None:
         abort(404)
-    products = database.load_products(search_id).drop(columns="search_id")
-    filename = f"tiki_{normalize_text(search['keyword']).replace(' ', '_')}_{search_id}.csv"
-    return Response(
-        products.to_csv(index=False).encode("utf-8-sig"),  # utf-8-sig: Excel shows Vietnamese correctly
+    keyword = normalize_text(products["keyword"].iloc[0]).replace(" ", "_")
+    return send_file(
+        storage.search_path(search_id),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        as_attachment=True,
+        download_name=f"tiki_{keyword}_{search_id}.csv",
     )
 
 

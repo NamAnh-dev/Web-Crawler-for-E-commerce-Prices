@@ -23,3 +23,6 @@ STUDY_NOTES.md
 .idea/
 .DS_Store
 Thumbs.db
+
+# Saved searches of the web app (one CSV per search)
+data/searches/

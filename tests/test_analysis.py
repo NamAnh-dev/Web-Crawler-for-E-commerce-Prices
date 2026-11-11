@@ -1,70 +1,42 @@
 import json
 
-import numpy as np
 import pandas as pd
 
-from analysis import analyze, flag_prices, price_histogram, price_segments, reference_prices, short_price
+from analysis import analyze, good_deals, price_ranges, price_summary, short_price
+
+PRICES = [
+    200_000,
+    220_000,
+    250_000,
+    260_000,
+    300_000,
+    310_000,
+    350_000,
+    400_000,
+    420_000,
+    500_000,
+]
 
 
-def make_products(prices):
-    """Products of one search; some have no brand and some are not rated yet."""
-    n = len(prices)
-    brands = ["Logitech", "Razer", None, "DareU"]
-    return pd.DataFrame({
-        "product_id": [str(i) for i in range(n)],
-        "name": [f"Chuột Gaming {i}" for i in range(n)],
-        "brand": [brands[i % 4] for i in range(n)],
-        "category": "Chuột Chơi Game",
-        "price": prices,
-        "original_price": prices,
-        "discount_pct": 0,
-        "sold": list(range(n)),
-        "rating": [4.8 if i % 2 == 0 else np.nan for i in range(n)],
-        "review_count": 10,
-        "image_url": None,
-        "product_url": [f"https://tiki.vn/p{i}.html" for i in range(n)],
-    })
-
-
-PRICES = [200_000, 220_000, 250_000, 260_000, 300_000, 310_000, 350_000, 400_000, 420_000, 500_000]
-
-
-def test_flag_prices_finds_unusual_prices_on_both_sides():
-    prices = pd.Series(PRICES + [5_000, 50_000_000])
-    flags = flag_prices(prices)
-    assert flags.iloc[-2] == "low"
-    assert flags.iloc[-1] == "high"
-    assert (flags.iloc[:-2] == "normal").all()
-
-
-def test_flag_prices_does_not_judge_small_groups():
-    assert (flag_prices(pd.Series([1_000, 200_000, 50_000_000])) == "normal").all()
-
-
-def test_reference_prices_are_percentiles_rounded_to_1000():
-    prices = reference_prices(pd.Series(PRICES))
-    assert prices["median"] == 305_000
-    assert prices["floor"] == 218_000   # 10th percentile: 218 000
-    assert prices["q1"] <= prices["median"] <= prices["q3"]
-
-
-def test_price_segments_shares_add_up_to_100():
-    df = make_products(PRICES)
-    table = price_segments(df, reference_prices(df["price"]))
-    assert table["segment"].tolist() == ["budget", "mid", "premium"]
-    assert round(table["listing_share"].sum()) == 100
-    assert round(table["sold_share"].sum()) == 100
-
-
-def test_price_segments_needs_at_least_two_prices():
-    df = make_products([100_000] * 8)
-    assert price_segments(df, reference_prices(df["price"])).empty
-
-
-def test_price_histogram_uses_round_ranges():
-    histogram = price_histogram(pd.Series(PRICES))
-    assert histogram["labels"] == ["200K–300K", "300K–500K", "500K–1Tr"]
-    assert histogram["counts"] == [4, 5, 1]
+def make_products():
+    """Ten clean products: product 0 sold 0 units, product 9 sold 9 units.
+    Products 0, 2, 4, 6, 8 are rated 4.8; the others are not rated yet."""
+    return pd.DataFrame(
+        {
+            "product_id": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+            "name": [f"Chuột Gaming {i}" for i in range(10)],
+            "brand": ["Logitech", "Razer"] * 5,
+            "category": "Chuột Chơi Game",
+            "price": PRICES,
+            "original_price": PRICES,
+            "discount_pct": 0,
+            "sold": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "rating": [4.8, None] * 5,
+            "review_count": 10,
+            "image_url": None,
+            "product_url": [f"https://tiki.vn/p{i}.html" for i in range(10)],
+        }
+    )
 
 
 def test_short_price():
@@ -73,11 +45,32 @@ def test_short_price():
     assert short_price(2_000_000) == "2Tr"
 
 
+def test_price_summary():
+    prices = price_summary(pd.Series(PRICES))
+    assert prices["min"] == 200_000
+    assert prices["max"] == 500_000
+    assert prices["mean"] == 321_000
+    assert prices["median"] == 305_000  # between 300 000 and 310 000
+
+
+def test_price_ranges_count_products_and_units_sold():
+    table = price_ranges(make_products())
+    assert table["label"].tolist() == ["200K–300K", "300K–500K", "500K–1Tr"]
+    assert table["products"].tolist() == [4, 5, 1]
+    assert table["sold"].tolist() == [6, 30, 9]
+    assert table["product_share"].tolist() == [40.0, 50.0, 10.0]
+
+
+def test_good_deals_are_cheap_well_rated_and_sorted_by_sales():
+    picks = good_deals(make_products(), median=305_000)
+    assert picks["product_id"].tolist() == ["4", "2", "0"]
+
+
 def test_analyze_returns_everything_the_page_needs():
-    report = analyze(make_products(PRICES + [5_000]))
-    assert report["summary"]["products"] == 11
-    assert report["summary"]["unusual"] == 1
-    assert len(report["products"]) == 11
-    assert report["best_sellers"][0]["sold"] == 10
-    # the chart data must be valid JSON (no NaN, no numpy types)
-    json.dumps({"histogram": report["histogram"], "segments": report["segments"], "brands": report["brands"]})
+    report = analyze(make_products())
+    assert report["summary"]["products"] == 10
+    assert report["summary"]["total_sold"] == 45
+    assert report["top_range"]["label"] == "300K–500K"
+    assert report["best_sellers"][0]["sold"] == 9
+    # the chart data must be valid JSON (no NaN)
+    json.dumps({"ranges": report["ranges"], "brands": report["brands"]})
