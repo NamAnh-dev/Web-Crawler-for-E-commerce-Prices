@@ -3,27 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}EcomCheck · Giá hợp lý trên Tiki{% endblock %}</title>
-  <meta name="description" content="Thu thập và phân tích giá sản phẩm trên Tiki: giá sàn tham khảo, khoảng giá phổ biến, phân khúc bán chạy.">
+  <title>{% block title %}EcomCheck · Mặt bằng giá trên Tiki{% endblock %}</title>
+  <meta name="description" content="Thu thập và phân tích giá sản phẩm trên Tiki: giá thấp nhất, cao nhất, trung bình, trung vị, khoảng giá bán chạy.">
   <script>document.documentElement.classList.add("js")</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+
   <header class="nav" id="nav">
     <div class="container nav-inner">
       <a class="logo" href="{{ url_for('index') }}">
-        <span class="logo-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 18 9 12l4 3 7-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
+        <span class="logo-mark" aria-hidden="true">₫</span>
         EcomCheck
       </a>
       <nav class="nav-links" aria-label="Điều hướng">
-        <a href="{{ url_for('index') }}#how">Cách hoạt động</a>
-        <a href="https://github.com/NamAnh-dev/Web-Crawler-for-E-commerce-Prices" target="_blank" rel="noopener">GitHub</a>
+        <a href="{{ url_for('index') }}#history">Lịch sử</a>
+        <a class="nav-github" href="https://github.com/NamAnh-dev/Web-Crawler-for-E-commerce-Prices" target="_blank" rel="noopener">GitHub ↗</a>
       </nav>
     </div>
   </header>
@@ -33,7 +34,7 @@
       <div class="toasts" role="status">
         {% for message in messages %}
           <div class="toast">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <span class="toast-icon" aria-hidden="true">!</span>
             <span>{{ message }}</span>
             <button type="button" class="toast-close" aria-label="Đóng">×</button>
           </div>
@@ -42,22 +43,22 @@
     {% endif %}
   {% endwith %}
 
-  {% block content %}{% endblock %}
+  <main>
+    {% block content %}{% endblock %}
+  </main>
 
   <footer class="footer">
     <div class="container footer-inner">
-      <span><strong>EcomCheck</strong> · dự án học tập về thu thập &amp; phân tích dữ liệu</span>
-      <span>Dữ liệu công khai từ Tiki · giá có thể thay đổi theo thời gian</span>
+      <strong class="footer-logo">EcomCheck</strong>
+      <span>Dữ liệu công khai từ Tiki. Giá có thể thay đổi theo thời gian.</span>
     </div>
   </footer>
 
   <div class="loader" id="loader" aria-live="polite" hidden>
     <div class="loader-card">
-      <div class="orbit" aria-hidden="true"><span></span><span></span><span></span></div>
-      <h3>Đang thu thập dữ liệu từ Tiki…</h3>
-      <p>Tải tối đa 5 trang kết quả, nghỉ 1 giây giữa hai trang, rồi làm sạch và phân tích.</p>
-      <div class="loader-bar"><span></span></div>
-      <p class="loader-time">Đã chờ <strong id="loader-seconds">0</strong> giây</p>
+      <div class="loader-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      <p class="loader-title">Đang xem giá <strong id="loader-keyword"></strong></p>
+      <p class="loader-time">Thường mất khoảng 10 giây · đã chờ <span id="loader-seconds">0</span> giây</p>
     </div>
   </div>
 
