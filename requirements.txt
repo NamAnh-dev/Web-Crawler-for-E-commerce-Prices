@@ -4,8 +4,8 @@ requests>=2.31
 beautifulsoup4>=4.12
 pandas>=2.1
 numpy>=1.26
+gunicorn>=22.0  # runs the app on the Render server (Linux only, not needed on Windows)
 
 # Notebooks and tests
 matplotlib>=3.8
-jupyter>=1.0
 pytest>=8.0

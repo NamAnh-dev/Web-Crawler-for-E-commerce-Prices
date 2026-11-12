@@ -148,16 +148,56 @@ const searchInput = document.querySelector("[data-typewriter]");
 if (searchInput && !reduceMotion) {
   const words = searchInput.dataset.typewriter.split("|");
   let word = 0, letter = 0, deleting = false;
-  (function type() {
+  const basePlaceholder = searchInput.placeholder; // "Nhập tên sản phẩm…"
+  function type() {
     const text = words[word];
     letter += deleting ? -1 : 1;
-    searchInput.placeholder = "Ví dụ: " + text.slice(0, letter);
+    // never show a half-empty "Ví dụ:" - between two words, show the normal hint
+    searchInput.placeholder = letter > 0 ? "Ví dụ: " + text.slice(0, letter) : basePlaceholder;
     let wait = deleting ? 35 : 80;
-    if (!deleting && letter === text.length) { deleting = true; wait = 1600; }
-    if (deleting && letter === 0) { deleting = false; word = (word + 1) % words.length; wait = 350; }
+    if (!deleting && letter === text.length) { deleting = true; wait = 1800; }
+    if (deleting && letter === 0) { deleting = false; word = (word + 1) % words.length; wait = 1200; }
     setTimeout(type, wait);
+  }
+  setTimeout(type, 1800); // start after the headline animation
+}
+
+// ---------- Home: shop window moves in layers with the pointer (parallax) ----------
+// Each piece has a data-depth: the bigger it is, the further it moves.
+const showcase = document.getElementById("showcase");
+if (showcase && finePointer && !reduceMotion) {
+  const layers = Array.from(showcase.querySelectorAll("[data-depth]"));
+  let targetX = 0, targetY = 0, x = 0, y = 0;
+  document.getElementById("hero").addEventListener("pointermove", (event) => {
+    const box = showcase.getBoundingClientRect();
+    targetX = (event.clientX - box.left) / box.width - 0.5;
+    targetY = (event.clientY - box.top) / box.height - 0.5;
+  });
+  document.getElementById("hero").addEventListener("pointerleave", () => { targetX = 0; targetY = 0; });
+  (function move() {
+    x += (targetX - x) * 0.08; // ease towards the pointer
+    y += (targetY - y) * 0.08;
+    layers.forEach((layer) => {
+      const depth = Number(layer.dataset.depth);
+      layer.style.transform = `translate3d(${-x * depth}px, ${-y * depth}px, 0)`;
+    });
+    requestAnimationFrame(move);
   })();
 }
+
+// ---------- Click ripple on buttons and chips ----------
+document.querySelectorAll(".btn, .chip").forEach((button) => {
+  button.addEventListener("pointerdown", (event) => {
+    if (reduceMotion) return;
+    const box = button.getBoundingClientRect();
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.left = `${event.clientX - box.left}px`;
+    ripple.style.top = `${event.clientY - box.top}px`;
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  });
+});
 
 // ---------- Example chips: fill the search box and submit ----------
 const searchForm = document.querySelector("form.search");
@@ -169,18 +209,45 @@ document.querySelectorAll(".chip").forEach((chip) => {
 });
 
 // ---------- Waiting screen while Flask collects the data ----------
+// Only ONE timer at a time: the old version never stopped its timer, so after
+// "Back" + a new search two timers wrote into the same place and the number jumped.
 const loader = document.getElementById("loader");
+const loaderSeconds = document.getElementById("loader-seconds");
+const loaderHint = document.getElementById("loader-hint");
+let loaderTimer = null;
+
+function stopLoader() {
+  clearInterval(loaderTimer);
+  loaderTimer = null;
+  loader.hidden = true;
+}
+
+// 75 -> "1 phút 15 giây"
+function formatWait(total) {
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes ? `${minutes} phút ${seconds} giây` : `${seconds} giây`;
+}
+
 document.querySelectorAll("form[data-loading]").forEach((form) => {
   form.addEventListener("submit", () => {
+    stopLoader();
     loader.hidden = false;
     const keyword = form.querySelector("[name=keyword]").value.trim();
     document.getElementById("loader-keyword").textContent = `“${keyword}”`;
-    const seconds = document.getElementById("loader-seconds");
+    loaderHint.textContent = "Thường mất khoảng 5–10 giây";
+    loaderSeconds.textContent = formatWait(0);
     const start = Date.now();
-    setInterval(() => { seconds.textContent = Math.floor((Date.now() - start) / 1000); }, 500);
+    loaderTimer = setInterval(() => {
+      const waited = Math.floor((Date.now() - start) / 1000);
+      loaderSeconds.textContent = formatWait(waited);
+      // when Tiki says "too many requests", scraper.py waits 10-20 s and tries again
+      if (waited >= 15) loaderHint.textContent = "Tiki đang bận nên phải chờ rồi thử lại, bạn đợi thêm chút nhé";
+    }, 250);
   });
 });
-window.addEventListener("pageshow", () => { loader.hidden = true; });
+// "Back" can show the page from the browser cache with the loader still open
+window.addEventListener("pageshow", stopLoader);
 
 // ---------- Messages (flash) ----------
 document.querySelectorAll(".toast").forEach((toast) => {

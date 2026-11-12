@@ -8,19 +8,27 @@
   <script>document.documentElement.classList.add("js")</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+  <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
   <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
   <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
 
   <header class="nav" id="nav">
     <div class="container nav-inner">
-      <a class="logo" href="{{ url_for('index') }}">
-        <span class="logo-mark" aria-hidden="true">₫</span>
-        EcomCheck
+      <a class="logo" href="{{ url_for('index') }}" aria-label="EcomCheck - trang chủ">
+        {# Logo: a white price tag with a check mark, on a warm coral square #}
+        <svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a4c"/><stop offset="1" stop-color="#f0473a"/></linearGradient></defs>
+          <rect width="48" height="48" rx="13" fill="url(#logo-grad)"/>
+          <path d="M9 24 18 14H39V34H18Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="17" cy="24" r="2.4" fill="#f0473a"/>
+          <path class="logo-check" d="m23.5 24.5 3.8 3.8 7.2-8" fill="none" stroke="#f0473a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="logo-word">Ecom<b>Check</b></span>
       </a>
       <nav class="nav-links" aria-label="Điều hướng">
         <a href="{{ url_for('index') }}#history">Lịch sử</a>
@@ -49,7 +57,7 @@
 
   <footer class="footer">
     <div class="container footer-inner">
-      <strong class="footer-logo">EcomCheck</strong>
+      <strong class="footer-logo logo-word">Ecom<b>Check</b></strong>
       <span>Dữ liệu công khai từ Tiki. Giá có thể thay đổi theo thời gian.</span>
     </div>
   </footer>
@@ -58,7 +66,7 @@
     <div class="loader-card">
       <div class="loader-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
       <p class="loader-title">Đang xem giá <strong id="loader-keyword"></strong></p>
-      <p class="loader-time">Thường mất khoảng 10 giây · đã chờ <span id="loader-seconds">0</span> giây</p>
+      <p class="loader-time"><span id="loader-hint">Thường mất khoảng 5–10 giây</span> · đã chờ <span id="loader-seconds">0 giây</span></p>
     </div>
   </div>
 

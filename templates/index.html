@@ -7,16 +7,15 @@
 
   <div class="container hero-inner">
     <div class="hero-text">
-      <span class="eyebrow reveal"><span class="pulse-dot"></span> Dữ liệu thật, lấy trực tiếp từ Tiki</span>
-      <h1 class="hero-title" data-split>Món này giá bao nhiêu là <mark>vừa?</mark></h1>
+      <h1 class="hero-title" data-split>Xem mặt bằng giá<br>trước khi <mark>xuống tiền</mark></h1>
       <p class="lead reveal" style="--i: 3">
-        Nhập tên một sản phẩm. EcomCheck thu thập tới 200 sản phẩm trên Tiki, làm sạch dữ liệu
-        rồi cho bạn thấy giá thấp nhất, cao nhất, trung bình, trung vị và khoảng giá bán chạy.
+        Gõ tên một món hàng. EcomCheck so giá của tới 200 sản phẩm trên Tiki
+        và cho bạn biết mức giá phổ biến, rẻ nhất, đắt nhất.
       </p>
 
       <form class="search reveal" style="--i: 4" method="post" action="{{ url_for('search') }}" data-loading>
         <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input type="text" name="keyword" id="keyword" placeholder="Ví dụ: chuột gaming" minlength="2" required autocomplete="off" aria-label="Tên sản phẩm"
+        <input type="text" name="keyword" id="keyword" placeholder="Nhập tên sản phẩm…" minlength="2" required autocomplete="off" aria-label="Tên sản phẩm"
                data-typewriter="chuột gaming|tai nghe bluetooth|nồi chiên không dầu|bàn phím cơ">
         <button type="submit" class="btn btn-primary magnetic">
           <span>Xem giá</span>
@@ -24,46 +23,107 @@
         </button>
       </form>
 
-      <div class="chips reveal" style="--i: 5">
-        <span>Thử ngay:</span>
-        {% for example in ["chuột gaming", "tai nghe bluetooth", "nồi chiên không dầu", "bàn phím cơ"] %}
-          <button type="button" class="chip" data-keyword="{{ example }}">{{ example }}</button>
-        {% endfor %}
+      <div class="suggest reveal" style="--i: 5">
+        <span class="suggest-label">Gợi ý</span>
+        <div class="chips">
+          {% for example in ["chuột gaming", "tai nghe bluetooth", "nồi chiên không dầu", "bàn phím cơ"] %}
+            <button type="button" class="chip" style="--c: {{ loop.index }}" data-keyword="{{ example }}">{{ example }}</button>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
-    {# Price tags: real numbers from the latest searches, nothing invented #}
-    <div class="hero-visual reveal" style="--i: 2">
-      {% if searches %}
-        {% set latest = searches[0] %}
-        <a class="tag tag-main tilt" href="{{ url_for('result', search_id=latest.id) }}">
-          <span class="tag-hole" aria-hidden="true"></span>
-          <span class="tag-label">Lần tìm gần nhất</span>
-          <strong class="tag-keyword">{{ latest.keyword }}</strong>
-          <span class="tag-caption">Giá trung vị</span>
-          <strong class="tag-price" data-count="{{ latest.median_price }}" data-format="vnd">{{ latest.median_price | vnd }}</strong>
-          <span class="tag-row">
-            <span>{{ latest.products }} sản phẩm</span>
-            <span>{{ latest.min_price | short_price }} – {{ latest.max_price | short_price }}</span>
-          </span>
-          <span class="tag-barcode" aria-hidden="true"></span>
-        </a>
-        {% for s in searches[1:3] %}
-          <a class="tag tag-small tag-small-{{ loop.index }}" href="{{ url_for('result', search_id=s.id) }}">
-            <span class="tag-hole" aria-hidden="true"></span>
-            <span class="tag-label">{{ s.keyword }}</span>
-            <strong class="tag-price">{{ s.median_price | short_price }}</strong>
-          </a>
-        {% endfor %}
-      {% else %}
-        <div class="tag tag-main tilt">
-          <span class="tag-hole" aria-hidden="true"></span>
-          <span class="tag-label">Chưa có lần tìm nào</span>
-          <strong class="tag-keyword">Thử “chuột gaming”</strong>
-          <span class="tag-caption">Kết quả đầu tiên của bạn sẽ hiện ở đây</span>
-          <span class="tag-barcode" aria-hidden="true"></span>
+    {# Illustrated shop window: every kind of product on Tiki, searched, compared and reviewed #}
+    <div class="hero-visual">
+      <div class="showcase" id="showcase">
+        <span class="sc-sun" aria-hidden="true"></span>
+        <span class="sc-spark sc-spark-1" aria-hidden="true">✦</span>
+        <span class="sc-spark sc-spark-2" aria-hidden="true">✦</span>
+        <span class="sc-spark sc-spark-3" aria-hidden="true">✦</span>
+
+        {# a ring of product categories turning slowly around the bag #}
+        <div class="sc-orbit" aria-hidden="true">
+          {% set categories = [
+            ("Điện thoại", "sky", '<rect x="18" y="6" width="28" height="52" rx="7" fill="#2b3160"/><rect x="21" y="12" width="22" height="38" rx="3" fill="#7cc4ff"/><rect x="28" y="8.3" width="8" height="1.8" rx=".9" fill="#7cc4ff"/><path d="M32 37s-6.5-3.9-6.5-8.6a3.6 3.6 0 0 1 6.5-2.2 3.6 3.6 0 0 1 6.5 2.2c0 4.7-6.5 8.6-6.5 8.6Z" fill="#fff"/>'),
+            ("Tai nghe", "peach", '<path d="M13 37v-6a19 19 0 0 1 38 0v6" fill="none" stroke="#2b3160" stroke-width="5" stroke-linecap="round"/><rect x="8" y="33" width="13" height="21" rx="6" fill="#ff6756"/><rect x="43" y="33" width="13" height="21" rx="6" fill="#ff6756"/><rect x="11" y="37" width="4" height="12" rx="2" fill="#fff" opacity=".45"/>'),
+            ("Thời trang", "butter", '<path d="M24 9 9 17l6 12 6-3v29h22V26l6 3 6-12-15-8q-8 9-16 0Z" fill="#ffc533" stroke="#e8a400" stroke-width="2" stroke-linejoin="round"/><rect x="21" y="35" width="22" height="6" fill="#ff6756"/>'),
+            ("Giày dép", "sky", '<path d="M7 44c0-7 3-17 8-17 3 0 4 4 9 4s7-6 11-6c2 0 4 6 9 9l10 4c3 1 4 3 4 6H7Z" fill="#58b4ff"/><path d="M22 32l4 3M28 29l4 3M34 27l3 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><rect x="6" y="44" width="53" height="7" rx="3.5" fill="#fff" stroke="#2b3160" stroke-width="2.4"/>'),
+            ("Làm đẹp", "peach", '<rect x="22" y="35" width="20" height="22" rx="3" fill="#2b3160"/><rect x="24" y="27" width="16" height="10" rx="2" fill="#ffc533"/><path d="M26 27V15l12-7v19Z" fill="#ff4f7b"/><path d="M29 24v-7" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>'),
+            ("Gia dụng", "mint", '<path d="M24 16c-2-3 2-5 0-9M32 16c-2-3 2-5 0-9M40 16c-2-3 2-5 0-9" fill="none" stroke="#98a0bf" stroke-width="2.2" stroke-linecap="round"/><rect x="28" y="20" width="8" height="6" rx="2" fill="#2b3160"/><rect x="9" y="26" width="46" height="6" rx="3" fill="#2b3160"/><path d="M12 32h40v12a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10Z" fill="#39c98a"/><rect x="3" y="36" width="10" height="4.5" rx="2.2" fill="#2b3160"/><rect x="51" y="36" width="10" height="4.5" rx="2.2" fill="#2b3160"/>'),
+            ("Đồ chơi", "butter", '<circle cx="17" cy="17" r="8" fill="#c98a5a"/><circle cx="47" cy="17" r="8" fill="#c98a5a"/><circle cx="17" cy="17" r="4" fill="#f2c9a5"/><circle cx="47" cy="17" r="4" fill="#f2c9a5"/><circle cx="32" cy="34" r="21" fill="#d99a68"/><ellipse cx="32" cy="42" rx="9.5" ry="7.5" fill="#f2c9a5"/><circle cx="25" cy="31" r="2.6" fill="#2b3160"/><circle cx="39" cy="31" r="2.6" fill="#2b3160"/><ellipse cx="32" cy="39" rx="3.2" ry="2.3" fill="#2b3160"/><path d="M28.5 44q3.5 3 7 0" fill="none" stroke="#2b3160" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="39" r="2.8" fill="#ff8f8f" opacity=".6"/><circle cx="44" cy="39" r="2.8" fill="#ff8f8f" opacity=".6"/>'),
+            ("Sách", "mint", '<rect x="11" y="41" width="42" height="11" rx="2.5" fill="#ff6756"/><rect x="16" y="30" width="36" height="11" rx="2.5" fill="#58b4ff"/><rect x="11" y="19" width="40" height="11" rx="2.5" fill="#ffc533"/><path d="M45 43v7M46 32v7M44 21v7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>'),
+          ] %}
+          {% for label, tint, art in categories %}
+            <span class="sc-cat sc-tint-{{ tint }}" style="--a: {{ loop.index0 * 45 }}deg; --i: {{ loop.index0 }}">
+              <span class="sc-cat-inner">
+                <svg viewBox="0 0 64 64">{{ art | safe }}</svg>
+                <small>{{ label }}</small>
+              </span>
+            </span>
+          {% endfor %}
         </div>
-      {% endif %}
+
+        {# a full shopping bag with the EcomCheck tag on it #}
+        <span class="sc-bag-wrap" data-depth="6" aria-hidden="true">
+          <svg class="sc-bag" viewBox="0 0 200 220">
+            <defs>
+              <linearGradient id="bag-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a4c"/><stop offset="1" stop-color="#e9483a"/></linearGradient>
+            </defs>
+            <path d="M64 72C64 24 136 24 136 72" fill="none" stroke="#c23a2e" stroke-width="10" stroke-linecap="round"/>
+            <rect x="48" y="34" width="44" height="46" rx="8" fill="#58b4ff" transform="rotate(-14 70 57)"/>
+            <rect x="104" y="28" width="38" height="54" rx="8" fill="#ffc533" transform="rotate(12 123 55)"/>
+            <circle cx="98" cy="40" r="15" fill="#39c98a"/>
+            <path d="M30 66H170L182 204Q183 214 173 214H27Q17 214 18 204Z" fill="url(#bag-grad)"/>
+            <path d="M30 66H170L171.6 84H28.4Z" fill="#fff" opacity="0.16"/>
+            <circle cx="64" cy="80" r="5" fill="#b8352a"/>
+            <circle cx="136" cy="80" r="5" fill="#b8352a"/>
+            <path d="M40 96 34 196" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity="0.18"/>
+            <g transform="translate(42 90) scale(2.4)">
+              <path d="M9 24 18 14H39V34H18Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+              <circle cx="17" cy="24" r="2.4" fill="#e9483a"/>
+              <path class="sc-bag-check" d="m23.5 24.5 3.8 3.8 7.2-8" fill="none" stroke="#e9483a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+        </span>
+
+        {# magnifying glass = search #}
+        <span class="sc-lens-wrap" data-depth="16" aria-hidden="true">
+          <svg class="sc-lens" viewBox="0 0 100 100">
+            <path d="M64 64 88 88" stroke="#2b3160" stroke-width="13" stroke-linecap="round"/>
+            <path d="M66 66 72 72" stroke="#ffc533" stroke-width="13" stroke-linecap="round"/>
+            <circle cx="42" cy="42" r="29" fill="#ffffff" fill-opacity="0.6" stroke="#2b3160" stroke-width="9"/>
+            <path d="M25 36a18 18 0 0 1 11-12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+            <path d="m42 30 3.6 7.3 8.1 1.2-5.9 5.7 1.4 8-7.2-3.8-7.2 3.8 1.4-8-5.9-5.7 8.1-1.2Z" fill="#ff6756"/>
+          </svg>
+        </span>
+
+        {# reviews #}
+        <span class="sc-note sc-review" data-depth="22" aria-hidden="true">
+          <span class="sc-stars">★★★★★</span>
+          <small>Xem đánh giá</small>
+        </span>
+
+        {# price comparison #}
+        <span class="sc-note sc-compare" data-depth="20" aria-hidden="true">
+          <span class="sc-mini-bars"><i></i><i></i><i></i><i></i></span>
+          <small>So giá</small>
+        </span>
+
+        {# what the app really does: up to 200 products per search #}
+        <span class="sc-sticker" data-depth="26" aria-hidden="true">
+          <svg viewBox="0 0 100 100"><polygon points="50.0,0.0 59.6,8.1 71.7,5.0 76.8,16.4 89.1,18.8 88.7,31.3 98.7,38.9 93.0,50.0 98.7,61.1 88.7,68.7 89.1,81.2 76.8,83.6 71.7,95.0 59.6,91.9 50.0,100.0 40.4,91.9 28.3,95.0 23.2,83.6 10.9,81.2 11.3,68.7 1.3,61.1 7.0,50.0 1.3,38.9 11.3,31.3 10.9,18.8 23.2,16.4 28.3,5.0 40.4,8.1"/></svg>
+          <span class="sc-sticker-text"><small>tới</small><b>200</b><small>sản phẩm</small></span>
+        </span>
+
+        {% if searches %}
+          {% set latest = searches[0] %}
+          <a class="sc-caption" href="{{ url_for('result', search_id=latest.id) }}">
+            <span class="sc-caption-dot" aria-hidden="true"></span>
+            <span class="sc-caption-text">Vừa xem: <b>{{ latest.keyword }}</b> · {{ latest.products }} sản phẩm</span>
+            <span class="sc-caption-arrow" aria-hidden="true">→</span>
+          </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </section>
