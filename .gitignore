@@ -5,8 +5,7 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# Local data: the database is re-created automatically, CSV files come from scraper.py
-data/*.db
+# Local data: CSV files come from scraper.py
 data/*.csv
 !data/tiki_sample.csv
 

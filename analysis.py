@@ -3,6 +3,8 @@
 Một lượt tìm kiếm = một từ khóa, một danh mục, một thời điểm.
 """
 
+from itertools import pairwise
+
 import pandas as pd
 
 # Các mốc giá tròn, giống bộ lọc giá trên các trang mua sắm (đơn vị VND).
@@ -65,9 +67,8 @@ def price_ranges(df):
     40 % số lượng bán ra là nơi người mua tập trung.
     """
     rows = []  # mỗi khoảng giá sẽ thành một dict trong list này
-    # zip() ghép từng cặp mốc liền nhau: (0, 50K), (50K, 100K), (100K, 200K), ...
-    # PRICE_RANGES[:-1] = bỏ phần tử cuối, PRICE_RANGES[1:] = bỏ phần tử đầu.
-    for start, end in zip(PRICE_RANGES[:-1], PRICE_RANGES[1:]):
+    # pairwise() ghép từng cặp mốc liền nhau: (0, 50K), (50K, 100K), (100K, 200K), ...
+    for start, end in pairwise(PRICE_RANGES):
         # Bỏ qua khoảng giá nằm ngoài các sản phẩm của lượt tìm kiếm này:
         # khoảng kết thúc trước sản phẩm rẻ nhất, hoặc bắt đầu sau sản phẩm đắt nhất.
         # (Nhờ vậy biểu đồ không có một loạt cột trống ở hai đầu.)
@@ -95,8 +96,9 @@ def price_ranges(df):
     # thì dùng 1, để phép chia bên dưới không bị chia cho 0.
     total_sold = max(table["sold"].sum(), 1)
     # Phần trăm của mỗi khoảng, làm tròn 1 chữ số thập phân (vd 40.0)
-    table["product_share"] = (100 * table["products"] / total_products).round(1)
-    table["sold_share"] = (100 * table["sold"] / total_sold).round(1)
+    # Đặt cột (Series) lên trước số 100 để Pylance hiểu đúng kiểu dữ liệu
+    table["product_share"] = (table["products"] * 100 / total_products).round(1)
+    table["sold_share"] = (table["sold"] * 100 / total_sold).round(1)
     return table
 
 

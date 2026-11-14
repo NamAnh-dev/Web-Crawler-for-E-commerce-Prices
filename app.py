@@ -10,6 +10,12 @@ Luồng chạy khi người dùng tìm kiếm:
 import os  # đọc biến môi trường (os.environ)
 
 import requests  # chỉ dùng để bắt lỗi mạng của requests (requests.RequestException)
+
+# 4 bước của dự án
+import scraper  # bước 1: thu thập
+import storage  # bước 3: lưu / đọc CSV
+from analysis import analyze, short_price  # bước 4: phân tích
+from cleaning import clean_products, normalize_text  # bước 2: làm sạch
 from flask import (
     Flask,  # lớp tạo ra web app
     abort,  # dừng và trả về một mã lỗi HTTP, vd abort(404)
@@ -20,12 +26,6 @@ from flask import (
     send_file,  # gửi một file về trình duyệt (để tải xuống)
     url_for,  # tạo đường link từ tên hàm, vd url_for("index") -> "/"
 )
-
-# 4 bước của dự án
-import scraper  # bước 1: thu thập
-import storage  # bước 3: lưu / đọc CSV
-from analysis import analyze, short_price  # bước 4: phân tích
-from cleaning import clean_products, normalize_text  # bước 2: làm sạch
 
 # Tạo web app. __name__ giúp Flask biết tìm thư mục templates/ và static/ ở đâu.
 app = Flask(__name__)
@@ -94,7 +94,9 @@ def search():
         flash(f"Không tìm thấy sản phẩm phù hợp với “{keyword}”. Hãy thử từ khóa khác.")
         return redirect(url_for("index"))
 
-    search_id = storage.save_search(keyword, products)  # bước 3: lưu CSV, nhận số thứ tự
+    search_id = storage.save_search(
+        keyword, products
+    )  # bước 3: lưu CSV, nhận số thứ tự
     # Chuyển hướng (redirect) sang /result/<số> thay vì hiện kết quả ngay tại đây:
     # nhờ vậy khi người dùng bấm F5 (tải lại), trình duyệt chỉ mở lại trang kết quả
     # chứ không gửi lại form và tải lại Tiki thêm một lần nữa.

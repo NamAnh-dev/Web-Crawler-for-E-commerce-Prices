@@ -6,6 +6,28 @@
 {% block title %}{{ search.keyword }} · EcomCheck{% endblock %}
 {% block body_class %}page-result{% endblock %}
 
+{# Small line icons (24x24, drawn with a 2px stroke) #}
+{% macro icon(name) %}
+{%- set ICONS = {
+  "tag": '<path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1 1 0 0 1 0 1.4l-7.6 7.6a1 1 0 0 1-1.4 0Z"/><circle cx="8" cy="8" r="1.6"/>',
+  "down": '<path d="M12 5v14m-6-6 6 6 6-6"/>',
+  "avg": '<path d="M4 9h16M4 15h16"/>',
+  "up": '<path d="M12 19V5m-6 6 6-6 6 6"/>',
+  "cart": '<path d="M3 4h2.2l2.3 10.5h10l2.2-7.5H6.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
+  "box": '<path d="M20.5 7.5 12 3 3.5 7.5v9L12 21l8.5-4.5ZM3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+  "star": '<path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z"/>',
+  "scale": '<path d="M12 4v16m-5 0h10M5 7h14M5 7l-3 6.5a3 3 0 0 0 6 0Zm14 0-3 6.5a3 3 0 0 0 6 0Z"/>',
+  "bars": '<path d="M3.5 20.5h17M7 17v-5m5 5V6m5 11v-8"/>',
+  "flame": '<path d="M12 3c.8 3.2 5.5 5.2 5.5 10.5a5.5 5.5 0 0 1-11 0c0-2.6 1.3-4.3 2.6-5.4.2 2 1.2 3.2 2.6 3.4-.4-2.9-.6-5.6.3-8.5Z"/>',
+  "folder": '<path d="M3.5 6.5a1 1 0 0 1 1-1h5l2 2.5h8a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1Z"/>',
+  "clock": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  "refresh": '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9m0-5v5h-5"/>',
+  "search": '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  "database": '<ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/>'
+} -%}
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">{{ ICONS[name] | safe }}</svg>
+{%- endmacro %}
+
 {% macro product_card(item, index) %}
   <a class="product card tilt reveal" style="--i: {{ index }}" href="{{ item.product_url }}" target="_blank" rel="noopener">
     <div class="product-image">
@@ -33,10 +55,9 @@
     <a class="back-link reveal" href="{{ url_for('index') }}">← Tìm kiếm mới</a>
     <h1 class="result-title" data-split>“{{ search.keyword }}”</h1>
     <div class="meta-chips reveal" style="--i: 2">
-      <span class="meta-chip">{{ search.category }}</span>
-      <span class="meta-chip">{{ s.products }} sản phẩm</span>
-      <span class="meta-chip">{{ s.brands }} thương hiệu</span>
-      <span class="meta-chip">{{ search.created_at }}</span>
+      <span class="meta-chip">{{ icon("folder") }}{{ search.category }}</span>
+      <span class="meta-chip"><b>{{ s.products }}</b> sản phẩm · <b>{{ s.brands }}</b> thương hiệu</span>
+      <span class="meta-chip">{{ icon("clock") }}{{ search.created_at }}</span>
     </div>
     <div class="hero-actions reveal" style="--i: 3">
       <a class="btn btn-primary magnetic" href="{{ url_for('download_csv', search_id=search.id) }}">
@@ -45,69 +66,113 @@
       </a>
       <form method="post" action="{{ url_for('search') }}" data-loading>
         <input type="hidden" name="keyword" value="{{ search.keyword }}">
-        <button type="submit" class="btn btn-ghost">↻ Thu thập lại</button>
+        <button type="submit" class="btn btn-ghost">{{ icon("refresh") }}<span>Thu thập lại</span></button>
       </form>
     </div>
   </div>
 </section>
 
-<section class="container kpis">
-  <article class="kpi card spot reveal" style="--i: 1">
-    <span class="kpi-label">Thấp nhất</span>
-    <strong class="kpi-value" data-count="{{ p.min }}" data-format="vnd">{{ p.min | vnd }}</strong>
-    <span class="kpi-note">sản phẩm rẻ nhất tìm được</span>
+{# ---------- Prices: the typical price first, the rest beside it ---------- #}
+<section class="container price-board">
+  <article class="price-main card spot reveal" style="--i: 1">
+    <span class="price-deco" aria-hidden="true">{{ icon("tag") }}</span>
+    <span class="price-label">Giá phổ biến</span>
+    <strong class="price-value" data-count="{{ p.median }}" data-format="vnd">{{ p.median | vnd }}</strong>
+    <p class="price-note">Trung vị: một nửa số sản phẩm rẻ hơn mức này.</p>
   </article>
-  <article class="kpi kpi-main card spot reveal" style="--i: 2">
-    <span class="kpi-label">Trung vị</span>
-    <strong class="kpi-value" data-count="{{ p.median }}" data-format="vnd">{{ p.median | vnd }}</strong>
-    <span class="kpi-note">một nửa rẻ hơn, một nửa đắt hơn</span>
-  </article>
-  <article class="kpi card spot reveal" style="--i: 3">
-    <span class="kpi-label">Trung bình</span>
-    <strong class="kpi-value" data-count="{{ p.mean }}" data-format="vnd">{{ p.mean | vnd }}</strong>
-    <span class="kpi-note">tổng giá chia số sản phẩm</span>
-  </article>
-  <article class="kpi card spot reveal" style="--i: 4">
-    <span class="kpi-label">Cao nhất</span>
-    <strong class="kpi-value" data-count="{{ p.max }}" data-format="vnd">{{ p.max | vnd }}</strong>
-    <span class="kpi-note">sản phẩm đắt nhất tìm được</span>
-  </article>
-</section>
 
-<section class="container">
-  <div class="stat-strip reveal">
-    <span><strong data-count="{{ s.total_sold }}" data-format="number">{{ s.total_sold | number }}</strong> lượt bán cộng dồn</span>
-    <span><strong>{{ s.never_sold_share }}%</strong> sản phẩm chưa bán được cái nào</span>
-    <span><strong>{{ s.rated_share }}%</strong> sản phẩm đã có đánh giá</span>
+  <article class="price-side card reveal" style="--i: 2">
+    <div class="price-row">
+      <span class="row-icon tint-mint">{{ icon("down") }}</span>
+      <span class="row-label">Rẻ nhất</span>
+      <strong class="row-value" data-count="{{ p.min }}" data-format="vnd">{{ p.min | vnd }}</strong>
+    </div>
+    <div class="price-row">
+      <span class="row-icon tint-sky">{{ icon("avg") }}</span>
+      <span class="row-label">Trung bình</span>
+      <strong class="row-value" data-count="{{ p.mean }}" data-format="vnd">{{ p.mean | vnd }}</strong>
+    </div>
+    <div class="price-row">
+      <span class="row-icon tint-peach">{{ icon("up") }}</span>
+      <span class="row-label">Đắt nhất</span>
+      <strong class="row-value" data-count="{{ p.max }}" data-format="vnd">{{ p.max | vnd }}</strong>
+    </div>
+  </article>
+
+  <div class="facts reveal" style="--i: 3">
+    <span class="fact">
+      <span class="row-icon tint-peach">{{ icon("cart") }}</span>
+      <span><strong data-count="{{ s.total_sold }}" data-format="number">{{ s.total_sold | number }}</strong> đã bán</span>
+    </span>
+    <span class="fact">
+      <span class="row-icon tint-butter">{{ icon("box") }}</span>
+      <span><strong>{{ s.never_sold_share }}%</strong> chưa bán được</span>
+    </span>
+    <span class="fact">
+      <span class="row-icon tint-sky">{{ icon("star") }}</span>
+      <span><strong>{{ s.rated_share }}%</strong> có đánh giá</span>
+    </span>
   </div>
 </section>
 
+{# ---------- Insights: one number + one short sentence each ---------- #}
+{# gap = trung bình cao/thấp hơn trung vị bao nhiêu % #}
+{% set gap = ((p.mean - p.median) * 100 / p.median) | round | int if p.median else 0 %}
 <section class="section container">
   <div class="section-head reveal">
     <span class="kicker">Nhận xét</span>
-    <h2>Dữ liệu cho thấy điều gì?</h2>
+    <h2>Điểm đáng chú ý</h2>
   </div>
   <div class="insights">
     <article class="insight card spot reveal" style="--i: 1">
-      <span class="insight-icon">₫</span>
-      {% if p.mean > p.median %}
-        <p>Giá trung bình (<strong>{{ p.mean | vnd }}</strong>) cao hơn trung vị (<strong>{{ p.median | vnd }}</strong>):
-           vài sản phẩm rất đắt kéo trung bình lên, nên trung vị gần với giá của một sản phẩm thông thường hơn.</p>
+      <div class="insight-top">
+        <span class="row-icon tint-peach">{{ icon("scale") }}</span>
+        {% if gap >= 10 %}Trung bình cao hơn trung vị
+        {% elif gap <= -10 %}Trung bình thấp hơn trung vị
+        {% else %}Trung bình gần bằng trung vị{% endif %}
+      </div>
+      <strong class="insight-value">{{ "%+d" | format(gap) }}%</strong>
+      {% if gap >= 10 %}
+        <p>Vài sản phẩm rất đắt kéo trung bình lên. Trung vị sát với giá thường gặp hơn.</p>
+      {% elif gap <= -10 %}
+        <p>Vài sản phẩm rất rẻ kéo trung bình xuống. Trung vị sát với giá thường gặp hơn.</p>
       {% else %}
-        <p>Giá trung bình (<strong>{{ p.mean | vnd }}</strong>) và trung vị (<strong>{{ p.median | vnd }}</strong>) gần nhau:
-           giá của nhóm sản phẩm này khá đồng đều.</p>
+        <p>Không có nhóm sản phẩm quá đắt hay quá rẻ làm lệch giá trung bình.</p>
       {% endif %}
     </article>
+
     {% if s.total_sold %}
       <article class="insight card spot reveal" style="--i: 2">
-        <span class="insight-icon">▥</span>
-        <p>Khoảng giá <strong>{{ top.label }}</strong> bán được nhiều nhất: <strong>{{ top.sold_share | round | int }}%</strong> tổng lượt bán,
-           trong khi chỉ có {{ top.product_share | round | int }}% số sản phẩm nằm ở khoảng này.</p>
+        <div class="insight-top">
+          <span class="row-icon tint-butter">{{ icon("bars") }}</span>
+          Khoảng giá bán chạy nhất
+        </div>
+        <strong class="insight-value">{{ top.label }}</strong>
+        <div class="share-bars">
+          <div class="share">
+            <span>Lượt bán</span>
+            <span class="share-track"><i style="--w: {{ top.sold_share }}%"></i></span>
+            <b>{{ top.sold_share | round | int }}%</b>
+          </div>
+          <div class="share share-muted">
+            <span>Số sản phẩm</span>
+            <span class="share-track"><i style="--w: {{ top.product_share }}%"></i></span>
+            <b>{{ top.product_share | round | int }}%</b>
+          </div>
+        </div>
       </article>
+
+      {% set best = report.best_sellers[0] %}
       <article class="insight card spot reveal" style="--i: 3">
-        <span class="insight-icon">★</span>
-        <p>Sản phẩm bán chạy nhất chiếm <strong>{{ s.best_seller_share }}%</strong> tổng lượt bán:
-           <em>{{ s.best_seller }}</em>.</p>
+        <div class="insight-top">
+          <span class="row-icon tint-sky">{{ icon("flame") }}</span>
+          Sản phẩm bán chạy nhất
+        </div>
+        <strong class="insight-value">{{ s.best_seller_share }}%<small>tổng lượt bán</small></strong>
+        <a class="best-item" href="{{ best.product_url }}" target="_blank" rel="noopener">
+          {% if best.image_url %}<img src="{{ best.image_url }}" alt="" loading="lazy">{% endif %}
+          <span>{{ best.name }}</span>
+        </a>
       </article>
     {% endif %}
   </div>
@@ -163,7 +228,10 @@
         <p><span id="row-count">{{ s.products }}</span> sản phẩm</p>
       </div>
       <div class="table-tools">
-        <input type="search" id="table-filter" placeholder="Lọc theo tên…" aria-label="Lọc theo tên">
+        <label class="table-search">
+          {{ icon("search") }}
+          <input type="search" id="table-filter" placeholder="Tìm theo tên…" aria-label="Tìm theo tên">
+        </label>
         <select id="table-sort" aria-label="Sắp xếp">
           <option value="sold">Bán chạy</option>
           <option value="price-asc">Giá tăng dần</option>
@@ -179,6 +247,8 @@
           <tr><th>Sản phẩm</th><th class="num">Giá</th><th class="num">Đã bán</th><th class="num">Đánh giá</th></tr>
         </thead>
         <tbody id="product-rows">
+          {# the list comes sorted by units sold, so the first row sold the most #}
+          {% set max_sold = report.products[0].sold or 1 %}
           {% for item in report.products %}
             <tr data-name="{{ item.name }}" data-price="{{ item.price }}" data-sold="{{ item.sold }}" data-rating="{{ item.rating or 0 }}" data-discount="{{ item.discount_pct }}">
               <td>
@@ -190,16 +260,27 @@
                   </span>
                 </a>
               </td>
-              <td class="num">
-                <strong>{{ item.price | vnd }}</strong>
+              <td class="num" data-label="Giá">
+                <strong class="cell-price">{{ item.price | vnd }}</strong>
                 {% if item.discount_pct %}<span class="cell-discount">-{{ item.discount_pct }}%</span>{% endif %}
               </td>
-              <td class="num">{{ item.sold | number }}</td>
-              <td class="num">{% if item.rating %}<span class="stars">★ {{ item.rating }}</span> <small>({{ item.review_count }})</small>{% else %}<span class="muted">chưa có</span>{% endif %}</td>
+              <td class="num" data-label="Đã bán">
+                <span class="cell-sold">{{ item.sold | number }}</span>
+                <span class="sold-bar"><i style="--w: {{ (item.sold * 100 / max_sold) | round(1) }}%"></i></span>
+              </td>
+              <td class="num" data-label="Đánh giá">
+                {% if item.rating %}
+                  <span class="cell-rating">★ {{ item.rating }}</span>
+                  <small class="cell-reviews">{{ item.review_count | number }} đánh giá</small>
+                {% else %}
+                  <span class="muted">Chưa có</span>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+      <p class="table-empty" id="table-empty" hidden>Không có sản phẩm nào có tên như vậy.</p>
     </div>
     <div class="table-foot">
       <button type="button" class="btn btn-ghost" id="show-more">Xem thêm</button>
@@ -210,24 +291,35 @@
 <section class="section container method">
   <div class="section-head reveal">
     <span class="kicker">Phương pháp</span>
-    <h2>Các con số được tính thế nào?</h2>
+    <h2>Cách tính các con số</h2>
   </div>
-  <div class="accordion">
-    <details class="card reveal" style="--i: 1">
-      <summary>Thấp nhất, cao nhất, trung bình, trung vị</summary>
-      <p>Tính trên giá bán của mọi sản phẩm sau khi làm sạch. Trung bình là tổng giá chia cho số sản phẩm.
-         Trung vị là giá đứng giữa khi xếp các sản phẩm từ rẻ đến đắt. Hai số này được làm tròn đến 1.000 ₫.</p>
-    </details>
-    <details class="card reveal" style="--i: 2">
-      <summary>Phân khúc giá và gợi ý “đáng mua”</summary>
-      <p>Sản phẩm được chia vào các khoảng giá tròn (dưới 50K, 50K–100K, 100K–200K…), rồi đếm số sản phẩm và cộng lượt bán của từng khoảng.
-         “Đáng mua” là một bộ lọc đơn giản: giá không cao hơn trung vị, từ 4,5★ với ít nhất 5 đánh giá, sắp theo lượt bán.</p>
-    </details>
-    <details class="card reveal" style="--i: 3">
-      <summary>Dữ liệu đến từ đâu và có giới hạn gì?</summary>
-      <p>API tìm kiếm công khai của Tiki (5 trang đầu, tối đa 200 sản phẩm), chỉ giữ danh mục chính của từ khóa.
-         “Đã bán” là số cộng dồn Tiki hiển thị, không phải doanh số trong một khoảng thời gian; giá có thể thay đổi theo giờ và chưa tính voucher.</p>
-    </details>
+  <div class="method-grid">
+    <article class="method-card card reveal" style="--i: 1">
+      <span class="row-icon tint-peach">{{ icon("avg") }}</span>
+      <h3>Các mức giá</h3>
+      <ul>
+        <li><b>Trung bình</b> = tổng giá ÷ số sản phẩm.</li>
+        <li><b>Trung vị</b> = giá đứng giữa khi xếp từ rẻ đến đắt.</li>
+        <li>Hai số này làm tròn đến 1.000 ₫.</li>
+      </ul>
+    </article>
+    <article class="method-card card reveal" style="--i: 2">
+      <span class="row-icon tint-butter">{{ icon("bars") }}</span>
+      <h3>Khoảng giá và “Đáng mua”</h3>
+      <ul>
+        <li>Chia theo mốc tròn: dưới 50K, 50K–100K, 100K–200K…</li>
+        <li><b>Đáng mua</b>: giá không quá trung vị, từ 4,5★ và có ít nhất 5 đánh giá.</li>
+      </ul>
+    </article>
+    <article class="method-card card reveal" style="--i: 3">
+      <span class="row-icon tint-sky">{{ icon("database") }}</span>
+      <h3>Nguồn và giới hạn</h3>
+      <ul>
+        <li>5 trang kết quả đầu trên Tiki (tối đa 200 sản phẩm), chỉ giữ danh mục chính.</li>
+        <li><b>Đã bán</b> là số cộng dồn, không phải doanh số theo tháng.</li>
+        <li>Giá đổi theo thời gian và chưa tính voucher.</li>
+      </ul>
+    </article>
   </div>
 </section>
 {% endblock %}

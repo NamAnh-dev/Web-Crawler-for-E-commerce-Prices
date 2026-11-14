@@ -445,6 +445,7 @@ if (tbody) {
     });
     rowCount.textContent = matches.length;
     moreButton.hidden = matches.length <= shown;
+    document.getElementById("table-empty").hidden = matches.length > 0;
   }
 
   filterInput.addEventListener("input", () => { shown = 12; update(); });
